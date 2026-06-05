@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "GitHub Talent Analyzer",
+  "version": "1.0.0",
+
+  "permissions": [
+    "sidePanel",
+    "tabs"
+  ],
+
+  "host_permissions": [
+    "https://github.com/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_title": "GitHub Talent Analyzer"
+  },
+
+  "side_panel": {
+    "default_path": "index.html"
+  }
+}
