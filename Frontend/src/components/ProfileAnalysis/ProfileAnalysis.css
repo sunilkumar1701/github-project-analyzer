@@ -1,0 +1,248 @@
+  .profile-analysis {
+  display: grid;
+
+  grid-template-columns:
+    minmax(150px, 25%)
+    minmax(150px, 25%)
+    minmax(320px, 50%);
+
+  gap: 8px;
+
+  margin-top: 0;
+}
+
+  /* ---------------- */
+  /* COMMON CARD */
+  /* ---------------- */
+
+  .analysis-card {
+    background: linear-gradient(
+      135deg,
+      #07152f,
+      #0b1730
+    );
+
+    border: 1px solid rgba(59, 130, 246, 0.15);
+
+    border-radius: 14px;
+
+    padding: 10px 14px;
+
+    min-height: 80px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    overflow: hidden;
+  }
+
+  .analysis-header {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 6px;
+
+  min-width: 0;
+}
+
+  .analysis-title {
+  color: white;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  line-height: 1.2;
+
+  min-width: 0;
+}
+
+  .analysis-trend {
+    color: #00e676;
+
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+
+
+  /* ---------------- */
+  /* REPO CARD */
+  /* ---------------- */
+
+  .repo-card {
+    display: flex;
+
+    flex-direction: row;
+
+    align-items: center;
+
+    justify-content: space-between;
+  }
+
+  .repo-left {
+    flex: 1;
+
+    min-width: 0;
+  }
+
+  .repo-right {
+  flex: 1;
+
+  min-width: 0;
+
+  padding-left: 18px;
+
+  overflow: hidden;
+}
+
+  .repo-divider {
+    width: 1px;
+
+    height: 70px;
+
+    background: rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+
+    flex-shrink: 0;
+  }
+
+  /* ---------------- */
+  /* LINK */
+  /* ---------------- */
+
+  .repo-link {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  color: #cbd5e1;
+
+  font-size: 13px;
+
+  text-decoration: none;
+
+  transition: 0.2s;
+
+  min-width: 0;
+
+  overflow: hidden;
+}
+
+.repo-link:hover {
+  color: #60a5fa;
+}
+
+.repo-link span {
+  flex: 1;
+
+  min-width: 0;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+  .repo-time {
+  margin-top: 6px;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  min-width: 0;
+  width: 100%;
+}
+
+  /* ---------------- */
+  /* EXTENSION PANEL */
+  /* ---------------- */
+
+  /* Do NOT stack cards vertically */
+
+  @media (max-width: 768px) {
+    .profile-analysis {
+      grid-template-columns:
+        minmax(130px, 25%)
+        minmax(130px, 25%)
+        minmax(260px, 50%);
+    }
+
+    .repo-card {
+      flex-direction: row;
+    }
+
+    .repo-divider {
+      display: block;
+    }
+
+    .repo-right {
+      padding-left: 12px;
+      margin-top: 0;
+    }
+  }
+
+  /* -------------------------------- */
+  /* SMALL WIDTH EXTENSION PANEL */
+  /* -------------------------------- */
+
+  @media (max-width: 540px) {
+
+    .profile-analysis {
+      grid-template-columns:
+        1fr
+        1fr
+        1fr;
+
+      gap: 8px;
+    }
+
+    /* Hide Public Repo section */
+
+    .repo-left {
+      display: none;
+    }
+
+    .repo-divider {
+      display: none;
+    }
+
+    /* Recent Repo takes full card */
+
+    .repo-right {
+      flex: 1;
+      width: 100%;
+
+      padding-left: 0;
+    }
+
+    .recent-title {
+  display: block;
+
+  min-width: 0;
+  max-width: 100%;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+    .repo-link {
+      font-size: 12px;
+    }
+
+    .repo-time {
+      font-size: 10px;
+    }
+  }

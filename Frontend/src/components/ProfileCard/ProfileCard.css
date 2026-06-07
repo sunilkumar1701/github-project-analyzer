@@ -3,10 +3,10 @@
   justify-content: space-between;
   align-items: center;
 
-  min-height: 118px;
+  min-height: 108px;
 
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
 
   background: linear-gradient(
     90deg,
@@ -119,6 +119,12 @@
 
   margin-left: 12px;
 }
+.score-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
 
 .score-label {
   display: flex;
@@ -218,21 +224,17 @@
 /* ---------------- */
 
 .expert-badge {
-  position: absolute;
-
-  right: -8px;
-  bottom: 6px;
-
   background: #0ea5e9;
-
   color: white;
 
   font-size: 10px;
   font-weight: 600;
 
-  padding: 4px 8px;
+  padding: 4px 10px;
 
   border-radius: 999px;
+
+  white-space: nowrap;
 }
 
 /* ---------------- */
@@ -240,12 +242,13 @@
 /* ---------------- */
 
 @media (max-width: 420px) {
-  .score-label {
+
+  .score-info {
     display: none;
   }
 
   .profile-meta {
-    gap: 10px;
+    gap: 10px;  
   }
 
   .meta-item {

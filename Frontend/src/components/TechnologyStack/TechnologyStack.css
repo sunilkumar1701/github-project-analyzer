@@ -1,0 +1,362 @@
+.technology-card {
+  background: linear-gradient(
+    135deg,
+    #07152f,
+    #0b1730
+  );
+
+  border: 1px solid rgba(
+    59,
+    130,
+    246,
+    0.15
+  );
+
+  border-radius: 14px;
+
+  padding: 12px;
+
+  height: 100%;
+
+  overflow: visible;
+}
+
+.technology-title {
+  color: white;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  margin-bottom: 12px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ====================== */
+/* LAYOUT */
+/* ====================== */
+
+.technology-wrapper {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 12px;
+
+  width: 100%;
+
+  overflow: visible;
+}
+
+/* ====================== */
+/* CHART */
+/* ====================== */
+
+.chart-section {
+  position: relative;
+
+  width: 150px;
+  height: 150px;
+
+  min-width: 150px;
+  min-height: 150px;
+
+  flex-shrink: 0;
+
+  overflow: visible;
+
+  z-index: 100;
+}
+
+.chart-center {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  transform:
+    translate(-50%, -50%);
+
+  color: white;
+
+  font-size: 20px;
+  font-weight: 700;
+
+  z-index: 10;
+
+  pointer-events: none;
+}
+
+/* ====================== */
+/* LEGEND */
+/* ====================== */
+
+.language-list {
+  flex: 1;
+
+  min-width: 55px;
+}
+
+.language-item {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 4px;
+
+  margin-bottom: 10px;
+
+  color: #e2e8f0;
+
+  font-size: 15px;
+
+  width: 100%;
+}
+
+.language-left {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  min-width: 0;
+
+  flex: 1;
+}
+
+.language-left span:last-child {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  min-width: 0;
+}
+
+.language-value {
+  min-width: 30px;
+
+  flex-shrink: 0;
+
+  text-align: right;
+
+  color: white;
+
+  font-weight: 700;
+
+  font-size: 14px;
+}
+
+.language-dot {
+  width: 10px;
+  height: 10px;
+
+  border-radius: 50%;
+
+  flex-shrink: 0;
+}
+
+/* ====================== */
+/* COMPACT PANEL */
+/* ====================== */
+
+@media (max-width: 1300px) {
+
+  .technology-title {
+    font-size: 14px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .technology-wrapper {
+    gap: 6px;
+  }
+
+  .chart-section {
+    width: 90px;
+    height: 90px;
+
+    min-width: 90px;
+    min-height: 90px;
+
+    overflow: visible;
+  }
+
+  .chart-center {
+    font-size: 14px;
+  }
+
+  .language-item {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 4px;
+
+    margin-bottom: 6px;
+
+    font-size: 12px;
+  }
+
+  .language-left {
+    flex: 1;
+
+    min-width: 0;
+  }
+
+  .language-dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .language-value {
+    min-width: 28px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    text-align: right;
+
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 1100px) {
+
+  .technology-title {
+    font-size: 13px;
+  }
+
+  .chart-section {
+    width: 82px;
+    height: 82px;
+
+    min-width: 82px;
+    min-height: 82px;
+
+    overflow: visible;
+  }
+
+  .chart-center {
+    font-size: 13px;
+  }
+
+  .language-item {
+    font-size: 11px;
+
+    margin-bottom: 5px;
+  }
+
+  .language-value {
+    min-width: 26px;
+
+    font-size: 11px;
+  }
+
+  .language-dot {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+@media (max-width: 900px) {
+
+  .technology-title {
+    font-size: 12px;
+
+    max-width: 90px;
+  }
+
+  .chart-section {
+    width: 75px;
+    height: 75px;
+
+    min-width: 75px;
+    min-height: 75px;
+
+    overflow: visible;
+  }
+
+  .chart-center {
+    font-size: 12px;
+  }
+
+  .technology-wrapper {
+    gap: 4px;
+  }
+
+  .language-item {
+    font-size: 10px;
+
+    margin-bottom: 4px;
+  }
+
+  .language-value {
+    min-width: 24px;
+
+    font-size: 10px;
+
+    font-weight: 700;
+  }
+
+  .language-dot {
+    width: 5px;
+    height: 5px;
+  }
+}
+
+@media (max-width: 400px) {
+
+  .language-left span:last-child {
+    display: none;
+  }
+
+  .language-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+
+    gap: 2px;
+
+    margin-bottom: 6px;
+  }
+
+  .language-left {
+    display: flex;
+    align-items: center;
+
+    flex: unset;
+    min-width: unset;
+  }
+
+  .language-value {
+    min-width: auto;
+
+    margin: 0;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    text-align: left;
+
+    line-height: 1;
+  }
+
+  .language-dot {
+    width: 6px;
+    height: 6px;
+
+    margin: 0;
+  }
+}

@@ -5,12 +5,12 @@
     #0b1324 100%
   );
 
-  padding: 10px;
+  padding: 8px;
 
   display: flex;
   flex-direction: column;
 
-  gap: 10px;
+  gap: 4px;
 
   height: 100%;
   overflow: hidden;
@@ -20,8 +20,17 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
   gap: 10px;
+
+  align-items: stretch;
+}
+.row > * {
+  min-width: 0;
 }
 
 /* Shared Card Style */
@@ -67,10 +76,3 @@
   text-align: center;
 }
 
-/* Responsive */
-
-@media (max-width: 520px) {
-  .row {
-    grid-template-columns: 1fr;
-  }
-}
