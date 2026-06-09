@@ -1,5 +1,4 @@
 import "./ActivityAnalysis.css";
-
 import {
   ResponsiveContainer,
   AreaChart,
@@ -10,54 +9,143 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const activityData = [
-  { month: "Jun", commits: 20, pushes: 15, pulls: 8 },
-  { month: "Jul", commits: 32, pushes: 22, pulls: 10 },
-  { month: "Aug", commits: 45, pushes: 30, pulls: 12 },
-  { month: "Sep", commits: 25, pushes: 18, pulls: 9 },
-  { month: "Oct", commits: 60, pushes: 42, pulls: 15 },
-  { month: "Nov", commits: 52, pushes: 38, pulls: 14 },
-  { month: "Dec", commits: 40, pushes: 25, pulls: 11 },
-  { month: "Jan", commits: 28, pushes: 18, pulls: 8 },
-  { month: "Feb", commits: 60, pushes: 45, pulls: 16 },
-  { month: "Mar", commits: 45, pushes: 32, pulls: 12 },
-  { month: "Apr", commits: 52, pushes: 36, pulls: 14 },
-  { month: "May", commits: 60, pushes: 48, pulls: 18 },
-];
+import {
+  useEffect,
+  useState,
+} from "react";
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload || !payload.length) {
+import {
+  getActivityAnalysis,
+} from "../../services/githubService";
+
+const labelMap = {
+  commits: "Commits",
+  pullRequests: "Pull Requests",
+  repositoriesCreated:
+    "Repositories",
+};
+
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}) => {
+  if (
+    !active ||
+    !payload ||
+    !payload.length
+  ) {
     return null;
   }
 
   return (
     <div className="activity-tooltip">
-      <div className="tooltip-title">{label}</div>
+      <div className="tooltip-title">
+        {label}
+      </div>
 
       {payload.map((item) => (
-        <div key={item.dataKey} className="tooltip-row">
+        <div
+          key={item.dataKey}
+          className="tooltip-row"
+        >
           <span
             style={{
               color: item.color,
             }}
           >
-            {item.dataKey.charAt(0).toUpperCase() + item.dataKey.slice(1)}
+            {labelMap[item.dataKey]}
           </span>
 
-          <strong>{item.value}</strong>
+          <strong>
+            {item.value}
+          </strong>
         </div>
       ))}
     </div>
   );
 };
 
-const ActivityAnalysis = () => {
+const ActivityAnalysis = ({ username }) => {
+  const [activityData, setActivityData] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  useEffect(() => {
+    fetchActivityData();
+  }, [username]);
+
+  const fetchActivityData =
+    async () => {
+      try {
+        setLoading(true);
+
+        const data =
+          await getActivityAnalysis(
+            username
+          );
+
+        setActivityData(
+          data.activity || []
+        );
+      } catch (error) {
+        console.error(
+          "Activity Analysis Error:",
+          error
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  <div className="activity-card">
+  <div className="activity-title">
+    Activity (Last 12 Months)
+  </div>
+
+  <div className="activity-chart">
+    {loading ? (
+      <div className="activity-loading">
+        Loading...
+      </div>
+    ) : (
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+      >
+        {/* AreaChart */}
+      </ResponsiveContainer>
+    )}
+  </div>
+</div>
+
+  const maxValue = Math.max(
+    ...activityData.flatMap(
+      (item) => [
+        item.commits,
+        item.pullRequests,
+        item.repositoriesCreated,
+      ]
+    ),
+    10
+  );
+
+  const roundedMax =
+    Math.ceil(maxValue / 10) * 10;
+
   return (
     <div className="activity-card">
-      <div className="activity-title">Activity (Last 12 Months)</div>
+      <div className="activity-title">
+        Activity (Last 12 Months)
+      </div>
 
       <div className="activity-chart">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+        >
           <AreaChart
             data={activityData}
             margin={{
@@ -68,26 +156,74 @@ const ActivityAnalysis = () => {
             }}
           >
             <defs>
-              <linearGradient id="commitGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#a855f7" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
+              <linearGradient
+                id="commitGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="0%"
+                  stopColor="#a855f7"
+                  stopOpacity={0.35}
+                />
+
+                <stop
+                  offset="100%"
+                  stopColor="#a855f7"
+                  stopOpacity={0}
+                />
               </linearGradient>
 
-              <linearGradient id="pushGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+              <linearGradient
+                id="prGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="0%"
+                  stopColor="#3b82f6"
+                  stopOpacity={0.25}
+                />
+
+                <stop
+                  offset="100%"
+                  stopColor="#3b82f6"
+                  stopOpacity={0}
+                />
               </linearGradient>
 
-              <linearGradient id="pullGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+              <linearGradient
+                id="repoGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="0%"
+                  stopColor="#10b981"
+                  stopOpacity={0.25}
+                />
+
+                <stop
+                  offset="100%"
+                  stopColor="#10b981"
+                  stopOpacity={0}
+                />
               </linearGradient>
             </defs>
 
-            <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <CartesianGrid
+              stroke="rgba(255,255,255,0.05)"
+              vertical={false}
+            />
 
             <XAxis
-              dataKey="month"
+              dataKey="label"
               tick={{
                 fill: "#94a3b8",
                 fontSize: 10,
@@ -97,8 +233,21 @@ const ActivityAnalysis = () => {
             />
 
             <YAxis
-              domain={[0, 60]}
-              ticks={[0, 20, 40, 60]}
+              domain={[
+                0,
+                roundedMax,
+              ]}
+              ticks={[
+                0,
+                Math.round(
+                  roundedMax / 3
+                ),
+                Math.round(
+                  (roundedMax * 2) /
+                    3
+                ),
+                roundedMax,
+              ]}
               tick={{
                 fill: "#94a3b8",
                 fontSize: 10,
@@ -107,7 +256,18 @@ const ActivityAnalysis = () => {
               tickLine={false}
             />
 
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={
+                <CustomTooltip />
+              }
+              cursor={{
+                stroke:
+                  "rgba(255,255,255,0.15)",
+              }}
+              wrapperStyle={{
+                zIndex: 9999,
+              }}
+            />
 
             <Area
               type="monotone"
@@ -118,7 +278,8 @@ const ActivityAnalysis = () => {
               dot={{
                 r: 4,
                 fill: "#a855f7",
-                stroke: "#c084fc",
+                stroke:
+                  "#c084fc",
                 strokeWidth: 2,
               }}
               activeDot={{
@@ -131,10 +292,10 @@ const ActivityAnalysis = () => {
 
             <Area
               type="monotone"
-              dataKey="pushes"
+              dataKey="pullRequests"
               stroke="#3b82f6"
               strokeWidth={2.5}
-              fill="url(#pushGradient)"
+              fill="url(#prGradient)"
               dot={{
                 r: 3,
                 fill: "#3b82f6",
@@ -143,10 +304,10 @@ const ActivityAnalysis = () => {
 
             <Area
               type="monotone"
-              dataKey="pulls"
+              dataKey="repositoriesCreated"
               stroke="#10b981"
               strokeWidth={2.5}
-              fill="url(#pullGradient)"
+              fill="url(#repoGradient)"
               dot={{
                 r: 3,
                 fill: "#10b981",

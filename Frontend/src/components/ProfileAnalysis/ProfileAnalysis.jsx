@@ -11,14 +11,14 @@ import {
 
 import { getProfileAnalysis } from "../../services/githubService";
 
-const ProfileAnalysis = () => {
+const ProfileAnalysis = ({ username }) => {
   const [analysis, setAnalysis] = useState(null);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
       try {
         const data = await getProfileAnalysis(
-          "sunilkumar1701"
+          username
         );
 
         setAnalysis(data);
@@ -31,7 +31,7 @@ const ProfileAnalysis = () => {
     };
 
     fetchAnalysis();
-  }, []);
+  }, [username]);
 
   const getRelativeTime = (dateString) => {
     if (!dateString) return "";

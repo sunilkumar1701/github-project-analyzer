@@ -11,7 +11,7 @@ import {
 
 import { getRepositoryAnalysis } from "../../services/githubService";
 
-const RepositoryAnalysis = () => {
+const RepositoryAnalysis = ({ username }) => {
   const [repositoryStats, setRepositoryStats] =
     useState(null);
 
@@ -21,7 +21,7 @@ const RepositoryAnalysis = () => {
         try {
           const data =
             await getRepositoryAnalysis(
-              "sunilkumar1701"
+              username
             );
 
           setRepositoryStats(data);
@@ -34,7 +34,7 @@ const RepositoryAnalysis = () => {
       };
 
     fetchRepositoryAnalysis();
-  }, []);
+  }, [username]);
 
   if (!repositoryStats) {
     return (

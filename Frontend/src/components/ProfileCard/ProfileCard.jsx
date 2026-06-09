@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import "./ProfileCard.css";
 import { getProfile } from "../../services/githubService";
 
-const ProfileCard = () => {
+const ProfileCard = ({ username }) => {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const data = await getProfile("sunilkumar1701");
+        console.log("Profile Username:", username);
+        const data = await getProfile(username);
 
         setProfile(data);
       } catch (error) {
@@ -17,7 +18,7 @@ const ProfileCard = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [username]);
 
   if (!profile) {
     return <div className="module-card profile-card">Loading Profile...</div>;

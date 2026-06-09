@@ -71,7 +71,7 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-const TechnologyStack = () => {
+const TechnologyStack = ({ username }) => {
   const [activeIndex, setActiveIndex] =
   useState(null);
 
@@ -93,7 +93,7 @@ const [totalLanguages, setTotalLanguages] =
 
         const data =
           await getTechnologyStackAnalysis(
-            "sunilkumar1701"
+            username  
           );
 
         const formattedData =
@@ -130,7 +130,7 @@ const [totalLanguages, setTotalLanguages] =
 
   fetchTechnologyStack();
 
-}, []);
+}, [username]);
 
   const isCompact = window.innerWidth < 1300;
 
@@ -150,8 +150,8 @@ const [totalLanguages, setTotalLanguages] =
 
       <div className="technology-wrapper">
         <div className="chart-section">
-          {mounted && (
-            <ResponsiveContainer width="100%" height="100%">
+  {technologyData.length > 0 ? (
+    <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Tooltip
                   content={<CustomTooltip />}
@@ -187,7 +187,11 @@ const [totalLanguages, setTotalLanguages] =
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-          )}
+  ) : (
+    <div className="tech-loading">
+      Loading...
+    </div>
+  )}
 
           <div className="chart-center">{totalLanguages}</div>
         </div>
