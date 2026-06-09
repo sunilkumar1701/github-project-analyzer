@@ -29,14 +29,14 @@ function App() {
       </div>
 
       <div
-  className="row"
-  style={{
-    gridTemplateColumns: "4fr 6fr",
-  }}
->
-  <TechnologyStack />
-  <ActivityAnalysis />
-</div>
+        className="row"
+        style={{
+          gridTemplateColumns: "4fr 6fr",
+        }}
+      >
+        <TechnologyStack />
+        <ActivityAnalysis />
+      </div>
 
       <div className="row">
         <RepositoryQuality />
