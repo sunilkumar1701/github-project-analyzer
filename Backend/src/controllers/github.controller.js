@@ -167,10 +167,38 @@ const getTechnologyStackAnalysis =
     }
   };
 
+  const getRepositoryQualityAnalysis =
+  async (req, res) => {
+    console.log(
+        "Repository Quality API Hit"
+      );
+    try {
+      const { username } =
+        req.params;
+
+      const data =
+        await githubService.getRepositoryQualityAnalysis(
+          username
+        );
+
+      res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message:
+          error.message,
+      });
+    }
+  };  
+
 module.exports = {
   getProfile,
   getProfileAnalysis,
   getRepositoryAnalysis,
   getTechnologyStackAnalysis,
   getActivityAnalysis,
+  getRepositoryQualityAnalysis
 };

@@ -245,10 +245,182 @@ const getActivityAnalysis = async (username) => {
   };
 };
 
+const getRepositoryQualityAnalysis =
+  async (username) => {
+console.log("githubApi =", githubApi);
+    const reposResponse =
+      await githubApi.get(
+        `/users/${username}/repos?per_page=100`
+      );
+
+    const repos =
+      reposResponse.data.filter(
+        (repo) => !repo.fork
+      );
+
+    const totalRepos =
+      repos.length;
+
+    if (totalRepos === 0) {
+      return {
+        score: 0,
+
+        metrics: {
+          readme: 0,
+          description: 0,
+          documentation: 0,
+          topics: 0,
+        },
+      };
+    }
+
+    let readmeCount = 0;
+
+    let descriptionCount = 0;
+
+    let documentationCount = 0;
+
+    let topicsCount = 0;
+
+    for (const repo of repos) {
+
+      if (
+        repo.description &&
+        repo.description.trim()
+      ) {
+        descriptionCount++;
+      }
+
+      if (
+        repo.topics &&
+        repo.topics.length > 0
+      ) {
+        topicsCount++;
+      }
+
+      try {
+
+        const readmeResponse =
+          await githubApi.get(
+            `/repos/${username}/${repo.name}/readme`
+          );
+
+        if (readmeResponse.data) {
+
+          readmeCount++;
+
+          const content =
+            Buffer.from(
+              readmeResponse.data.content,
+              "base64"
+            ).toString("utf8");
+
+          const wordCount =
+            content
+              .replace(
+                /[#*_`\-\[\]\(\)]/g,
+                ""
+              )
+              .split(/\s+/)
+              .filter(Boolean)
+              .length;
+
+          if (
+            wordCount >= 100
+          ) {
+            documentationCount++;
+          }
+        }
+
+      } catch (error) {
+
+        console.log(
+          `README not found: ${repo.name}`
+        );
+
+      }
+    }
+
+    const readmeScore =
+      (readmeCount /
+        totalRepos) *
+      30;
+
+    const descriptionScore =
+      (descriptionCount /
+        totalRepos) *
+      30;
+
+    const documentationScore =
+      (documentationCount /
+        totalRepos) *
+      20;
+
+    const topicsScore =
+      (topicsCount /
+        totalRepos) *
+      20;
+
+    const totalScore =
+      readmeScore +
+      descriptionScore +
+      documentationScore +
+      topicsScore;
+
+    return {
+
+      total_repos:
+        totalRepos,
+
+      score:
+        Math.round(
+          totalScore
+        ),
+
+      metrics: {
+        readme:
+          Math.round(
+            readmeScore
+          ),
+
+        description:
+          Math.round(
+            descriptionScore
+          ),
+
+        documentation:
+          Math.round(
+            documentationScore
+          ),
+
+        topics:
+          Math.round(
+            topicsScore
+          ),
+      },
+
+      counts: {
+        readme:
+          readmeCount,
+
+        description:
+          descriptionCount,
+
+        documentation:
+          documentationCount,
+
+        topics:
+          topicsCount,
+      },
+    };
+  };
+
 module.exports = {
   getGithubProfile,
   getProfileAnalysis,
   getRepositoryAnalysis,
   getTechnologyStackAnalysis,
   getActivityAnalysis,
+  getRepositoryQualityAnalysis,
+  getTechnologyStackAnalysis
 };

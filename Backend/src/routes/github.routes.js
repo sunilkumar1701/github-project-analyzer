@@ -11,6 +11,7 @@ const {
   getRepositoryAnalysis,
   getTechnologyStackAnalysis,
   getActivityAnalysis,
+  getRepositoryQualityAnalysis
 } = require(
   "../controllers/github.controller"
 );
@@ -38,6 +39,12 @@ router.get(
 router.get(
   "/activity-analysis/:username",
   getActivityAnalysis
+);
+
+
+router.get(
+  "/repository-quality/:username",
+  getRepositoryQualityAnalysis
 );
 
 module.exports = router;

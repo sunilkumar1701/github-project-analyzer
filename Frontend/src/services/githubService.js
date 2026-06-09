@@ -32,7 +32,6 @@ export const getGithubUsername = () => {
   });
 };
 
-
 export const getProfile = async (username) => {
   const response = await axios.get(
     `${API_BASE_URL}/profile/${username}`
@@ -49,8 +48,7 @@ export const getProfileAnalysis = async (username) => {
   return response.data.data;
 };
 
-export const getRepositoryAnalysis =
-  async (username) => {
+export const getRepositoryAnalysis =async (username) => {
     const response = await axios.get(
       `${API_BASE_URL}/repository-analysis/${username}`
     );
@@ -58,8 +56,7 @@ export const getRepositoryAnalysis =
     return response.data.data;
   };
 
-  export const getTechnologyStackAnalysis =
-  async (username) => {
+export const getTechnologyStackAnalysis =async (username) => {
 
     const response =
       await axios.get(
@@ -80,3 +77,13 @@ export const getActivityAnalysis = async (
 
   return response.data.data;
 };
+
+export const getRepositoryQualityAnalysis =async (username) => {
+
+    const response =
+      await axios.get(
+        `${API_BASE_URL}/repository-quality/${username}`
+      );
+
+    return response.data.data;
+  };

@@ -83,7 +83,9 @@ function App() {
         <ActivityAnalysis username={username} />
       </div>
 
-      <div className="row">
+      <div className="row"style={{
+          gridTemplateColumns: "4fr 6fr",
+        }}>
         <RepositoryQuality username={username} />
         <PortfolioReadiness username={username} />
       </div>
