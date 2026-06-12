@@ -193,6 +193,88 @@ const getTechnologyStackAnalysis =
       });
     }
   };  
+  const getPortfolioReadinessAnalysis =
+  async (req, res) => {
+    try {
+
+      const { username } =
+        req.params;
+
+      const data =
+        await githubService.getPortfolioReadinessAnalysis(
+          username
+        );
+
+      res.status(200).json({
+        success: true,
+        data,
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message:
+          error.message,
+      });
+
+    }
+  };
+
+
+  const getMostStarredRepository =async (req, res) => {
+    try {
+
+      const { username } =
+        req.params;
+
+      const data =
+        await githubService.getMostStarredRepository(
+          username
+        );
+
+      res.status(200).json({
+        success: true,
+        data,
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message:
+          error.message,
+      });
+
+    }
+  };
+
+  const getMostForkedRepository = async (req, res) => {
+    try {
+
+      const { username } =
+        req.params;
+
+      const data =
+        await githubService.getMostForkedRepository(
+          username
+        );
+
+      res.status(200).json({
+        success: true,
+        data,
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message:
+          error.message,
+      });
+
+    }
+  };
 
 module.exports = {
   getProfile,
@@ -200,5 +282,8 @@ module.exports = {
   getRepositoryAnalysis,
   getTechnologyStackAnalysis,
   getActivityAnalysis,
-  getRepositoryQualityAnalysis
+  getRepositoryQualityAnalysis,
+  getPortfolioReadinessAnalysis,
+  getMostStarredRepository,
+  getMostForkedRepository
 };

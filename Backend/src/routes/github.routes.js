@@ -11,10 +11,11 @@ const {
   getRepositoryAnalysis,
   getTechnologyStackAnalysis,
   getActivityAnalysis,
-  getRepositoryQualityAnalysis
-} = require(
-  "../controllers/github.controller"
-);
+  getRepositoryQualityAnalysis,
+  getPortfolioReadinessAnalysis,
+  getMostStarredRepository,
+  getMostForkedRepository
+} = require("../controllers/github.controller");
 
 router.get(
   "/profile/:username",
@@ -45,6 +46,20 @@ router.get(
 router.get(
   "/repository-quality/:username",
   getRepositoryQualityAnalysis
+);
+router.get(
+  "/portfolio-readiness/:username",
+  getPortfolioReadinessAnalysis
+);
+
+router.get(
+  "/most-starred-repository/:username",
+  getMostStarredRepository
+);
+
+router.get(
+  "/most-forked-repository/:username",
+  getMostForkedRepository
 );
 
 module.exports = router;

@@ -1,0 +1,168 @@
+.mfr-card {
+  width: 100%;
+
+  height: 100px;
+
+  padding: 10px 12px;
+
+  border-radius: 14px;
+
+  background: linear-gradient(
+    135deg,
+    #07152f,
+    #0b1730
+  );
+
+  border: 1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: flex-start;
+
+  overflow: hidden;
+}
+
+.mfr-title {
+  margin: 0 0 8px;
+
+  color: #ffffff;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.mfr-content {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  flex: 1;
+}
+
+.mfr-repo-name {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  color: #60a5fa;
+
+  text-decoration: none;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  min-width: 0;
+}
+
+.mfr-repo-name span {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.mfr-repo-name:hover {
+  color: #93c5fd;
+}
+
+.mfr-repo-icon {
+  flex-shrink: 0;
+
+  font-size: 12px;
+
+  color: #60a5fa;
+}
+
+.mfr-forks {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  color: #facc15;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+.mfr-fork-icon {
+  font-size: 12px;
+}
+
+.mfr-language {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  color: #cbd5e1;
+
+  font-size: 11px;
+
+  font-weight: 500;
+}
+
+.mfr-dot {
+  width: 7px;
+
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #3b82f6;
+
+  flex-shrink: 0;
+}
+
+.mfr-loading {
+  flex: 1;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #94a3b8;
+
+  font-size: 12px;
+}
+
+@media (max-width: 400px) {
+  .mfr-card {
+    height: 105px;
+  }
+
+  .mfr-title {
+    font-size: 11px;
+  }
+
+  .mfr-repo-name,
+  .mfr-forks {
+    font-size: 11px;
+  }
+
+  .mfr-language {
+    font-size: 10px;
+  }
+}

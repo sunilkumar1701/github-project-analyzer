@@ -87,3 +87,23 @@ export const getRepositoryQualityAnalysis =async (username) => {
 
     return response.data.data;
   };
+
+  export const getPortfolioReadinessAnalysis =async (username) => {
+
+    const response =
+      await axios.get(
+        `${API_BASE_URL}/portfolio-readiness/${username}`
+      );
+
+    return response.data.data;
+  };
+
+  export const getMostStarredRepository =async (username) => {
+
+    const response =
+      await axios.get(
+        `${API_BASE_URL}/most-starred-repository/${username}`
+      );
+
+    return response.data.data;
+  };

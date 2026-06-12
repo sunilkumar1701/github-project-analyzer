@@ -10,7 +10,6 @@ import TechnologyStack from "./components/TechnologyStack/TechnologyStack";
 import ActivityAnalysis from "./components/ActivityAnalysis/ActivityAnalysis";
 import RepositoryQuality from "./components/RepositoryQuality/RepositoryQuality";
 import PortfolioReadiness from "./components/PortfolioReadiness/PortfolioReadiness";
-import OpenSourceImpact from "./components/OpenSourceImpact/OpenSourceImpact";
 import MostStarredRepo from "./components/MostStarredRepo/MostStarredRepo";
 import MostForkedRepo from "./components/MostForkedRepo/MostForkedRepo";
 import ActivityStatus from "./components/ActivityStatus/ActivityStatus";
@@ -22,20 +21,13 @@ function App() {
   useEffect(() => {
     const loadUsername = async () => {
       try {
-        const githubUsername =
-          await getGithubUsername();
+        const githubUsername = await getGithubUsername();
 
-        console.log(
-          "Detected GitHub Username:",
-          githubUsername
-        );
+        console.log("Detected GitHub Username:", githubUsername);
 
         setUsername(githubUsername);
       } catch (error) {
-        console.error(
-          "Username Detection Error:",
-          error
-        );
+        console.error("Username Detection Error:", error);
       }
     };
 
@@ -83,21 +75,27 @@ function App() {
         <ActivityAnalysis username={username} />
       </div>
 
-      <div className="row"style={{
+      <div
+        className="row"
+        style={{
           gridTemplateColumns: "4fr 6fr",
-        }}>
+        }}
+      >
         <RepositoryQuality username={username} />
         <PortfolioReadiness username={username} />
       </div>
 
-      <div className="row">
-        <OpenSourceImpact username={username} />
+      <div
+        className="row"
+        style={{
+          gridTemplateColumns: "3fr 3fr 4fr",
+        }}
+      >
         <MostStarredRepo username={username} />
-      </div>
 
-      <div className="row">
-        <ActivityStatus username={username} />
         <MostForkedRepo username={username} />
+
+        <ActivityStatus username={username} />
       </div>
 
       <div className="full-row">

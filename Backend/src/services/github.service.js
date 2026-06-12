@@ -245,8 +245,7 @@ const getActivityAnalysis = async (username) => {
   };
 };
 
-const getRepositoryQualityAnalysis =
-  async (username) => {
+const getRepositoryQualityAnalysis =async (username) => {
 console.log("githubApi =", githubApi);
     const reposResponse =
       await githubApi.get(
@@ -414,6 +413,261 @@ console.log("githubApi =", githubApi);
       },
     };
   };
+  const getPortfolioReadinessAnalysis =
+  async (username) => {
+
+    const userResponse =
+      await githubApi.get(
+        `/users/${username}`
+      );
+
+    const user =
+      userResponse.data;
+
+    const checks = [];
+
+    // Bio
+    checks.push({
+      name: "Bio",
+      status:
+        !!(
+          user.bio &&
+          user.bio.trim()
+        ),
+    });
+
+    // Profile Photo
+    checks.push({
+      name:
+        "Profile Photo",
+      status:
+        !!user.avatar_url,
+    });
+
+    // Website
+    checks.push({
+      name: "Website",
+      status:
+        !!(
+          user.blog &&
+          user.blog.trim()
+        ),
+    });
+
+    // README Quality
+    let readmeQuality =
+      false;
+
+    try {
+
+      const readmeRepo =
+        await githubApi.get(
+          `/repos/${username}/${username}`
+        );
+
+      if (
+        readmeRepo.data
+      ) {
+        readmeQuality =
+          true;
+      }
+
+    } catch {}
+
+    checks.push({
+      name:
+        "README Quality",
+      status:
+        readmeQuality,
+    });
+
+    // Pinned Repositories
+    let pinnedRepos =
+      false;
+
+    try {
+
+      const reposResponse =
+        await githubApi.get(
+          `/users/${username}/repos?sort=updated&per_page=6`
+        );
+
+      const repos =
+        reposResponse.data.filter(
+          (repo) => !repo.fork
+        );
+
+      pinnedRepos =
+        repos.length > 0;
+
+    } catch {}
+
+    checks.push({
+      name:
+        "Pinned Repos",
+      status:
+        pinnedRepos,
+    });
+
+    const completed =
+      checks.filter(
+        (item) =>
+          item.status
+      ).length;
+
+    const score =
+      Math.round(
+        (completed /
+          checks.length) *
+          100
+      );
+
+    return {
+      score,
+      completed,
+      total:
+        checks.length,
+      checks,
+    };
+  };
+
+
+const getMostStarredRepository = async (username) => {
+
+    const reposResponse =
+      await githubApi.get(
+        `/users/${username}/repos?per_page=100`
+      );
+
+    const repos =
+      reposResponse.data;
+
+    if (
+      !repos ||
+      repos.length === 0
+    ) {
+      return null;
+    }
+
+    const mostStarredRepo =
+      repos.reduce(
+        (best, repo) => {
+
+          // Priority 1:
+          // Highest Stars
+          if (
+            repo.stargazers_count >
+            best.stargazers_count
+          ) {
+            return repo;
+          }
+
+          // Priority 2:
+          // If stars are equal,
+          // choose most recently updated repo
+          if (
+            repo.stargazers_count ===
+              best.stargazers_count &&
+            new Date(
+              repo.updated_at
+            ) >
+              new Date(
+                best.updated_at
+              )
+          ) {
+            return repo;
+          }
+
+          return best;
+
+        },
+        repos[0]
+      );
+
+    return {
+      name:
+        mostStarredRepo.name,
+
+      html_url:
+        mostStarredRepo.html_url,
+
+      stars:
+        mostStarredRepo.stargazers_count,
+
+      language:
+        mostStarredRepo.language ||
+        "Unknown",
+    };
+  };
+
+  const getMostForkedRepository = async (username) => {
+
+  const reposResponse =
+    await githubApi.get(
+      `/users/${username}/repos?per_page=100`
+    );
+
+  const repos =
+    reposResponse.data;
+
+  if (
+    !repos ||
+    repos.length === 0
+  ) {
+    return null;
+  }
+
+  const mostForkedRepo =
+    repos.reduce(
+      (best, repo) => {
+
+        // Priority 1:
+        // Highest Forks
+        if (
+          repo.forks_count >
+          best.forks_count
+        ) {
+          return repo;
+        }
+
+        // Priority 2:
+        // If forks are equal,
+        // choose most recently updated repo
+        if (
+          repo.forks_count ===
+            best.forks_count &&
+          new Date(
+            repo.updated_at
+          ) >
+            new Date(
+              best.updated_at
+            )
+        ) {
+          return repo;
+        }
+
+        return best;
+
+      },
+      repos[0]
+    );
+
+  return {
+    name:
+      mostForkedRepo.name,
+
+    html_url:
+      mostForkedRepo.html_url,
+
+    forks:
+      mostForkedRepo.forks_count,
+
+    language:
+      mostForkedRepo.language ||
+      "Unknown",
+  };
+};
+
 
 module.exports = {
   getGithubProfile,
@@ -422,5 +676,8 @@ module.exports = {
   getTechnologyStackAnalysis,
   getActivityAnalysis,
   getRepositoryQualityAnalysis,
-  getTechnologyStackAnalysis
+  getTechnologyStackAnalysis,
+  getPortfolioReadinessAnalysis,
+  getMostStarredRepository,
+  getMostForkedRepository
 };
