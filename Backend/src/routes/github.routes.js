@@ -14,7 +14,8 @@ const {
   getRepositoryQualityAnalysis,
   getPortfolioReadinessAnalysis,
   getMostStarredRepository,
-  getMostForkedRepository
+  getMostForkedRepository,
+  getActivityStatus
 } = require("../controllers/github.controller");
 
 router.get(
@@ -60,6 +61,11 @@ router.get(
 router.get(
   "/most-forked-repository/:username",
   getMostForkedRepository
+);
+
+router.get(
+  "/activity-status/:username",
+  getActivityStatus
 );
 
 module.exports = router;

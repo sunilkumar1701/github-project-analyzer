@@ -1,0 +1,187 @@
+.status-card {
+  width: 100%;
+
+  height: 100px;
+
+  padding: 10px 12px;
+
+  border-radius: 14px;
+
+  background: linear-gradient(
+    135deg,
+    #07152f,
+    #0b1730
+  );
+
+  border: 1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: flex-start;
+
+  overflow: hidden;
+}
+
+.status-title {
+  margin: 0 0 8px;
+
+  color: #ffffff;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+.status-row {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+.status-icon-wrapper {
+  width: 28px;
+
+  height: 28px;
+
+  border-radius: 50%;
+
+  border: 2px solid #16d957;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+.status-icon {
+  color: #16d957;
+}
+
+.status-text {
+  color: #16d957;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.status-last-active {
+  color: #cbd5e1;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+.status-divider {
+  height: 1px;
+
+  background: rgba(
+    255,
+    255,
+    255,
+    0.08
+  );
+
+  margin: 6px 0;
+}
+
+.status-streak {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+}
+
+.status-streak-label {
+  color: #ffffff;
+
+  font-size: 11px;
+
+  font-weight: 700;
+}
+
+.status-fire {
+  font-size: 12px;
+}
+
+.status-streak-value {
+  color: #ff7b22;
+
+  font-size: 12px;
+
+  font-weight: 800;
+}
+
+/* Highly Active */
+.highly-active {
+  color: #16d957;
+  border-color: #16d957;
+}
+
+/* Moderate */
+.moderate-active {
+  color: #facc15;
+  border-color: #facc15;
+}
+
+/* Low */
+.low-active {
+  color: #f97316;
+  border-color: #f97316;
+}
+
+/* Inactive */
+.inactive {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.status-loading {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  height: 60px;
+
+  color: #94a3b8;
+
+  font-size: 12px;
+}
+@media (max-width: 400px) {
+  .status-title {
+    font-size: 11px;
+  }
+
+  .status-text,
+  .status-streak-label,
+  .status-streak-value {
+    font-size: 10px;
+  }
+
+  .status-last-active {
+    font-size: 9px;
+  }
+}

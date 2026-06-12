@@ -88,7 +88,7 @@ function App() {
       <div
         className="row"
         style={{
-          gridTemplateColumns: "3fr 3fr 4fr",
+          gridTemplateColumns: "3fr 3fr 4fr"
         }}
       >
         <MostStarredRepo username={username} />

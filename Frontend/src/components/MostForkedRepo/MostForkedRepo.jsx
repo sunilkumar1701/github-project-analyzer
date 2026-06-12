@@ -1,17 +1,86 @@
 import "./MostForkedRepo.css";
 
 import {
-  FaStar,
+  useEffect,
+  useState,
+} from "react";
+
+import {
   FaCodeBranch,
 } from "react-icons/fa";
 
-const MostForkedRepo = () => {
-  const repo = {
-    name: "linux",
-    url: "https://github.com/torvalds/linux",
-    forks: "24.2K",
-    language: "C",
-  };
+import {
+  getMostForkedRepository,
+} from "../../services/githubService";
+
+const MostForkedRepo = ({
+  username,
+}) => {
+
+  const [repo, setRepo] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  useEffect(() => {
+    fetchRepository();
+  }, [username]);
+
+  const fetchRepository =
+    async () => {
+      try {
+
+        setLoading(true);
+
+        const data =
+          await getMostForkedRepository(
+            username
+          );
+
+        setRepo(data);
+
+      } catch (error) {
+
+        console.error(
+          "Most Forked Repo Error:",
+          error
+        );
+
+      } finally {
+
+        setLoading(false);
+
+      }
+    };
+
+  if (loading) {
+    return (
+      <div className="mfr-card">
+        <h3 className="mfr-title">
+          Most Forked Repository
+        </h3>
+
+        <div className="mfr-loading">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  if (!repo) {
+    return (
+      <div className="mfr-card">
+        <h3 className="mfr-title">
+          Most Forked Repository
+        </h3>
+
+        <div className="mfr-loading">
+          No Repository Found
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mfr-card">
@@ -21,7 +90,7 @@ const MostForkedRepo = () => {
 
       <div className="mfr-content">
         <a
-          href={repo.url}
+          href={repo.html_url}
           target="_blank"
           rel="noopener noreferrer"
           className="mfr-repo-name"
@@ -34,7 +103,7 @@ const MostForkedRepo = () => {
         </a>
 
         <div className="mfr-forks">
-          <FaStar className="mfr-fork-icon" />
+          <FaCodeBranch className="mfr-fork-icon" />
 
           <span>
             {repo.forks}
@@ -45,7 +114,8 @@ const MostForkedRepo = () => {
           <span className="mfr-dot"></span>
 
           <span>
-            {repo.language}
+            {repo.language ||
+              "Unknown"}
           </span>
         </div>
       </div>

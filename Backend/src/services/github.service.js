@@ -669,6 +669,143 @@ const getMostStarredRepository = async (username) => {
 };
 
 
+
+const getActivityStatus = async (username) => {
+
+  const reposResponse =
+    await githubApi.get(
+      `/users/${username}/repos?per_page=100`
+    );
+
+  const repos =
+    reposResponse.data.filter(
+      (repo) => !repo.fork
+    );
+
+  const thirtyDaysAgo =
+    new Date();
+
+  thirtyDaysAgo.setDate(
+    thirtyDaysAgo.getDate() - 30
+  );
+
+  let commitCount = 0;
+
+  let lastActive = null;
+
+  const commitDays =
+    new Set();
+
+  for (const repo of repos) {
+
+    try {
+
+      const commitsResponse =
+        await githubApi.get(
+          `/repos/${username}/${repo.name}/commits?per_page=100`
+        );
+
+      commitsResponse.data.forEach(
+        (commit) => {
+
+          const commitDate =
+            new Date(
+              commit.commit.author.date
+            );
+
+          if (
+            !lastActive ||
+            commitDate >
+              new Date(lastActive)
+          ) {
+            lastActive =
+              commit.commit.author.date;
+          }
+
+          const day =
+            commitDate
+              .toISOString()
+              .split("T")[0];
+
+          commitDays.add(day);
+
+          if (
+            commitDate >=
+            thirtyDaysAgo
+          ) {
+            commitCount++;
+          }
+
+        }
+      );
+
+    } catch (error) {
+
+      console.log(
+        `Commit fetch failed: ${repo.name}`
+      );
+
+    }
+  }
+
+  let status = "Inactive";
+
+  if (commitCount >= 20) {
+
+    status = "Highly Active";
+
+  } else if (
+    commitCount >= 10
+  ) {
+
+    status = "Moderate";
+
+  } else if (
+    commitCount >= 1
+  ) {
+
+    status = "Low";
+
+  }
+
+  let streak = 0;
+
+  const currentDate =
+    new Date();
+
+  while (true) {
+
+    const day =
+      currentDate
+        .toISOString()
+        .split("T")[0];
+
+    if (
+      commitDays.has(day)
+    ) {
+
+      streak++;
+
+      currentDate.setDate(
+        currentDate.getDate() - 1
+      );
+
+    } else {
+
+      break;
+
+    }
+
+  }
+
+  return {
+    status,
+    commitCount,
+    streak,
+    lastActive,
+  };
+};
+
 module.exports = {
   getGithubProfile,
   getProfileAnalysis,
@@ -679,5 +816,6 @@ module.exports = {
   getTechnologyStackAnalysis,
   getPortfolioReadinessAnalysis,
   getMostStarredRepository,
-  getMostForkedRepository
+  getMostForkedRepository,
+  getActivityStatus,
 };

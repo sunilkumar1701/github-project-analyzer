@@ -107,3 +107,25 @@ export const getRepositoryQualityAnalysis =async (username) => {
 
     return response.data.data;
   };
+
+  export const getMostForkedRepository = async (username) => {
+
+  const response =
+    await axios.get(
+      `${API_BASE_URL}/most-forked-repository/${username}`
+    );
+
+  return response.data.data;
+};
+
+export const getActivityStatus = async (
+  username
+) => {
+
+  const response =
+    await axios.get(
+      `${API_BASE_URL}/activity-status/${username}`
+    );
+
+  return response.data.data;
+};

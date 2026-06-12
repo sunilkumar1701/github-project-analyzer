@@ -276,6 +276,37 @@ const getTechnologyStackAnalysis =
     }
   };
 
+
+
+  const getActivityStatus =
+  async (req, res) => {
+
+    try {
+
+      const { username } =
+        req.params;
+
+      const data =
+        await githubService.getActivityStatus(
+          username
+        );
+
+      res.status(200).json({
+        success: true,
+        data,
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message:
+          error.message,
+      });
+
+    }
+  };
+  
 module.exports = {
   getProfile,
   getProfileAnalysis,
@@ -285,5 +316,6 @@ module.exports = {
   getRepositoryQualityAnalysis,
   getPortfolioReadinessAnalysis,
   getMostStarredRepository,
-  getMostForkedRepository
+  getMostForkedRepository,
+  getActivityStatus
 };
