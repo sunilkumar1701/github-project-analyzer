@@ -2,23 +2,29 @@ import { useEffect, useState } from "react";
 import "./ProfileCard.css";
 import { getProfile } from "../../services/githubService";
 
-const ProfileCard = ({ username }) => {
+const ProfileCard = ({ username, onLoaded, refreshKey }) => {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        console.log(
+      "🔄 Refetching ProfileCard"
+    );
         console.log("Profile Username:", username);
         const data = await getProfile(username);
-
+        console.log(
+      "✅ ProfileCard Loaded"
+    );
         setProfile(data);
+        onLoaded?.();
       } catch (error) {
         console.error("Error fetching profile:", error);
       }
     };
 
     fetchProfile();
-  }, [username]);
+  }, [username,refreshKey]);
 
   if (!profile) {
     return <div className="module-card profile-card">Loading Profile...</div>;
@@ -96,63 +102,46 @@ const ProfileCard = ({ username }) => {
 
       {/* RIGHT SIDE */}
       {/* RIGHT SIDE */}
-<div className="profile-right">
+      <div className="profile-right">
+        <div className="score-info">
+          <div className="score-label">
+            <span className="crown">👑</span>
 
-  <div className="score-info">
+            <div>
+              <p className="score-heading">Developer</p>
+              <p className="score-heading">Score</p>
+            </div>
+          </div>
 
-    <div className="score-label">
-      <span className="crown">👑</span>
+          <div className="expert-badge">Advanced</div>
+        </div>
 
-      <div>
-        <p className="score-heading">Developer</p>
-        <p className="score-heading">Score</p>
+        <div className="gauge-wrapper">
+          <svg className="score-gauge" viewBox="0 0 200 120">
+            <defs>
+              <linearGradient
+                id="scoreGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="0%"
+              >
+                <stop offset="0%" stopColor="#9333EA" />
+                <stop offset="100%" stopColor="#22C55E" />
+              </linearGradient>
+            </defs>
+
+            <path d="M30 100 A70 70 0 0 1 170 100" className="gauge-track" />
+
+            <path d="M30 100 A70 70 0 0 1 170 100" className="gauge-progress" />
+          </svg>
+
+          <div className="score-center">
+            <h2>85</h2>
+            <span>/100</span>
+          </div>
+        </div>
       </div>
-    </div>
-
-    <div className="expert-badge">
-      Advanced
-    </div>
-
-  </div>
-
-  <div className="gauge-wrapper">
-
-    <svg
-      className="score-gauge"
-      viewBox="0 0 200 120"
-    >
-      <defs>
-        <linearGradient
-          id="scoreGradient"
-          x1="0%"
-          y1="0%"
-          x2="100%"
-          y2="0%"
-        >
-          <stop offset="0%" stopColor="#9333EA" />
-          <stop offset="100%" stopColor="#22C55E" />
-        </linearGradient>
-      </defs>
-
-      <path
-        d="M30 100 A70 70 0 0 1 170 100"
-        className="gauge-track"
-      />
-
-      <path
-        d="M30 100 A70 70 0 0 1 170 100"
-        className="gauge-progress"
-      />
-    </svg>
-
-    <div className="score-center">
-      <h2>85</h2>
-      <span>/100</span>
-    </div>
-
-  </div>
-
-</div>
     </div>
   );
 };

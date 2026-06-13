@@ -9,46 +9,27 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 
-import {
-  getActivityAnalysis,
-} from "../../services/githubService";
+import { getActivityAnalysis } from "../../services/githubService";
 
 const labelMap = {
   commits: "Commits",
   pullRequests: "Pull Requests",
-  repositoriesCreated:
-    "Repositories",
+  repositoriesCreated: "Repositories",
 };
 
-const CustomTooltip = ({
-  active,
-  payload,
-  label,
-}) => {
-  if (
-    !active ||
-    !payload ||
-    !payload.length
-  ) {
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) {
     return null;
   }
 
   return (
     <div className="activity-tooltip">
-      <div className="tooltip-title">
-        {label}
-      </div>
+      <div className="tooltip-title">{label}</div>
 
       {payload.map((item) => (
-        <div
-          key={item.dataKey}
-          className="tooltip-row"
-        >
+        <div key={item.dataKey} className="tooltip-row">
           <span
             style={{
               color: item.color,
@@ -57,95 +38,74 @@ const CustomTooltip = ({
             {labelMap[item.dataKey]}
           </span>
 
-          <strong>
-            {item.value}
-          </strong>
+          <strong>{item.value}</strong>
         </div>
       ))}
     </div>
   );
 };
 
-const ActivityAnalysis = ({ username }) => {
-  const [activityData, setActivityData] =
-    useState([]);
+const ActivityAnalysis = ({ username , onLoaded ,refreshKey}) => {
+  const [activityData, setActivityData] = useState([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchActivityData();
-  }, [username]);
+  }, [username,refreshKey]);
 
-  const fetchActivityData =
-    async () => {
-      try {
-        setLoading(true);
+  const fetchActivityData = async () => {
+    try {
+      setLoading(true);
+      console.log(
+  "🔄 Refetching ActivityAnalysis"
+);
 
-        const data =
-          await getActivityAnalysis(
-            username
-          );
+      const data = await getActivityAnalysis(username);
 
-        setActivityData(
-          data.activity || []
-        );
-      } catch (error) {
-        console.error(
-          "Activity Analysis Error:",
-          error
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+      setActivityData(data.activity || []);
+      console.log(
+  "✅ ActivityAnalysis Loaded"
+);
+      onLoaded?.();
+    } catch (error) {
+      console.error("Activity Analysis Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   <div className="activity-card">
-  <div className="activity-title">
-    Activity (Last 12 Months)
-  </div>
+    <div className="activity-title">Activity (Last 12 Months)</div>
 
-  <div className="activity-chart">
-    {loading ? (
-      <div className="activity-loading">
-        Loading...
-      </div>
-    ) : (
-      <ResponsiveContainer
-        width="100%"
-        height="100%"
-      >
-        {/* AreaChart */}
-      </ResponsiveContainer>
-    )}
-  </div>
-</div>
+    <div className="activity-chart">
+      {loading ? (
+        <div className="activity-loading">Loading...</div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          {/* AreaChart */}
+        </ResponsiveContainer>
+      )}
+    </div>
+  </div>;
 
   const maxValue = Math.max(
-    ...activityData.flatMap(
-      (item) => [
-        item.commits,
-        item.pullRequests,
-        item.repositoriesCreated,
-      ]
-    ),
-    10
+    ...activityData.flatMap((item) => [
+      item.commits,
+      item.pullRequests,
+      item.repositoriesCreated,
+    ]),
+    10,
   );
 
-  const roundedMax =
-    Math.ceil(maxValue / 10) * 10;
+  const roundedMax = Math.ceil(maxValue / 10) * 10;
 
   return (
     <div className="activity-card">
-      <div className="activity-title">
-        Activity (Last 12 Months)
-      </div>
+      <div className="activity-title">Activity (Last 12 Months)</div>
 
       <div className="activity-chart">
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-        >
+        <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={activityData}
             margin={{
@@ -156,71 +116,26 @@ const ActivityAnalysis = ({ username }) => {
             }}
           >
             <defs>
-              <linearGradient
-                id="commitGradient"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="0%"
-                  stopColor="#a855f7"
-                  stopOpacity={0.35}
-                />
+              <linearGradient id="commitGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#a855f7" stopOpacity={0.35} />
 
-                <stop
-                  offset="100%"
-                  stopColor="#a855f7"
-                  stopOpacity={0}
-                />
+                <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
               </linearGradient>
 
-              <linearGradient
-                id="prGradient"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="0%"
-                  stopColor="#3b82f6"
-                  stopOpacity={0.25}
-                />
+              <linearGradient id="prGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
 
-                <stop
-                  offset="100%"
-                  stopColor="#3b82f6"
-                  stopOpacity={0}
-                />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
               </linearGradient>
 
-              <linearGradient
-                id="repoGradient"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="0%"
-                  stopColor="#10b981"
-                  stopOpacity={0.25}
-                />
+              <linearGradient id="repoGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
 
-                <stop
-                  offset="100%"
-                  stopColor="#10b981"
-                  stopOpacity={0}
-                />
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
               </linearGradient>
             </defs>
 
-            <CartesianGrid
-              stroke="rgba(255,255,255,0.05)"
-              vertical={false}
-            />
+            <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
 
             <XAxis
               dataKey="label"
@@ -233,19 +148,11 @@ const ActivityAnalysis = ({ username }) => {
             />
 
             <YAxis
-              domain={[
-                0,
-                roundedMax,
-              ]}
+              domain={[0, roundedMax]}
               ticks={[
                 0,
-                Math.round(
-                  roundedMax / 3
-                ),
-                Math.round(
-                  (roundedMax * 2) /
-                    3
-                ),
+                Math.round(roundedMax / 3),
+                Math.round((roundedMax * 2) / 3),
                 roundedMax,
               ]}
               tick={{
@@ -257,12 +164,9 @@ const ActivityAnalysis = ({ username }) => {
             />
 
             <Tooltip
-              content={
-                <CustomTooltip />
-              }
+              content={<CustomTooltip />}
               cursor={{
-                stroke:
-                  "rgba(255,255,255,0.15)",
+                stroke: "rgba(255,255,255,0.15)",
               }}
               wrapperStyle={{
                 zIndex: 9999,
@@ -278,8 +182,7 @@ const ActivityAnalysis = ({ username }) => {
               dot={{
                 r: 4,
                 fill: "#a855f7",
-                stroke:
-                  "#c084fc",
+                stroke: "#c084fc",
                 strokeWidth: 2,
               }}
               activeDot={{

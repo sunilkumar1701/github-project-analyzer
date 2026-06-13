@@ -1,5 +1,5 @@
 import "./App.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import { getGithubUsername } from "./services/githubService";
 
@@ -16,20 +16,85 @@ import ActivityStatus from "./components/ActivityStatus/ActivityStatus";
 import ActionButtons from "./components/ActionButtons/ActionButtons";
 
 function App() {
-  const [username, setUsername] = useState(null);
+  const [username, setUsername] =
+    useState(null);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const dashboardRef = useRef(null);
+
+  /* ==========================
+     MODULE LOADING TRACKER
+  ========================== */
+
+  const TOTAL_MODULES = 10;
+
+  const [loadedModules, setLoadedModules] =
+    useState(0);
+
+  const [refreshKey, setRefreshKey] =
+    useState(0);
+
+  const handleModuleLoaded =
+    () => {
+      setLoadedModules(
+        (prev) => prev + 1
+      );
+    };
+const handleReanalyze = () => {
+  console.clear();
+
+  console.log(
+    "================================="
+  );
+
+  console.log(
+    "🔄 REANALYZE BUTTON CLICKED"
+  );
+
+  console.log(
+    "================================="
+  );
+
+  setLoadedModules(0);
+
+  setRefreshKey(
+    (prev) => prev + 1
+  );
+};
+
+  const isDashboardLoading =
+    loadedModules < TOTAL_MODULES;
+
+  /* ==========================
+     LOAD USERNAME
+  ========================== */
 
   useEffect(() => {
-    const loadUsername = async () => {
-      try {
-        const githubUsername = await getGithubUsername();
+    const loadUsername =
+      async () => {
+        try {
+          const githubUsername =
+            await getGithubUsername();
 
-        console.log("Detected GitHub Username:", githubUsername);
+          console.log(
+            "Detected GitHub Username:",
+            githubUsername
+          );
 
-        setUsername(githubUsername);
-      } catch (error) {
-        console.error("Username Detection Error:", error);
-      }
-    };
+          setUsername(
+            githubUsername
+          );
+        } catch (error) {
+          console.error(
+            "Username Detection Error:",
+            error
+          );
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
     loadUsername();
   }, []);
@@ -40,8 +105,10 @@ function App() {
         className="dashboard"
         style={{
           display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          justifyContent:
+            "center",
+          alignItems:
+            "center",
           minHeight: "100vh",
           color: "#fff",
         }}
@@ -52,54 +119,111 @@ function App() {
   }
 
   return (
-    <div className="dashboard">
+    <div
+      className="dashboard"
+      ref={dashboardRef}
+    >
       <div className="full-row">
-        <ProfileCard username={username} />
+        <ProfileCard
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
       </div>
 
       <div className="full-row">
-        <ProfileAnalysis username={username} />
+        <ProfileAnalysis
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
       </div>
 
       <div className="full-row">
-        <RepositoryAnalysis username={username} />
+        <RepositoryAnalysis
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
       </div>
 
       <div
         className="row"
         style={{
-          gridTemplateColumns: "4fr 6fr",
+          gridTemplateColumns:
+            "4fr 6fr",
         }}
       >
-        <TechnologyStack username={username} />
-        <ActivityAnalysis username={username} />
+        <TechnologyStack
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
+
+        <ActivityAnalysis
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
       </div>
 
       <div
         className="row"
         style={{
-          gridTemplateColumns: "4fr 6fr",
+          gridTemplateColumns:
+            "4fr 6fr",
         }}
       >
-        <RepositoryQuality username={username} />
-        <PortfolioReadiness username={username} />
+        <RepositoryQuality
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
+
+        <PortfolioReadiness
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
       </div>
 
       <div
         className="row"
         style={{
-          gridTemplateColumns: "3fr 3fr 4fr"
+          gridTemplateColumns:
+            "3fr 3fr 4fr",
         }}
       >
-        <MostStarredRepo username={username} />
+        <MostStarredRepo
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
 
-        <MostForkedRepo username={username} />
+        <MostForkedRepo
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
 
-        <ActivityStatus username={username} />
+        <ActivityStatus
+          username={username}
+          refreshKey={refreshKey}
+          onLoaded={handleModuleLoaded}
+        />
       </div>
 
       <div className="full-row">
-        <ActionButtons />
+        <ActionButtons
+          isLoading={
+            isLoading ||
+            isDashboardLoading
+          }
+          dashboardRef={dashboardRef}
+          onReanalyze={
+            handleReanalyze
+          }
+        />
       </div>
     </div>
   );

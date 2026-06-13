@@ -6,18 +6,19 @@ import { useEffect, useState } from "react";
 
 import { getRepositoryQualityAnalysis } from "../../services/githubService";
 
-const RepositoryQuality = ({ username }) => {
+const RepositoryQuality = ({ username, onLoaded, refreshKey }) => {
   const [qualityData, setQualityData] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchRepositoryQuality();
-  }, [username]);
+  }, [username,refreshKey]);
 
   const fetchRepositoryQuality = async () => {
     try {
       setLoading(true);
+      console.log("🔄 Refetching RepositoryQuality");
 
       const data = await getRepositoryQualityAnalysis(username);
 
@@ -71,6 +72,8 @@ const RepositoryQuality = ({ username }) => {
 
         metrics,
       });
+      console.log("✅ RepositoryQuality Loaded");
+      onLoaded?.();
     } catch (error) {
       console.error("Repository Quality Error:", error);
     } finally {

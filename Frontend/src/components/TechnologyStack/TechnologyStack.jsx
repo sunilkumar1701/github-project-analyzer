@@ -1,18 +1,10 @@
 import "./TechnologyStack.css";
 import { useState, useEffect } from "react";
-import {
-  getTechnologyStackAnalysis,
-} from "../../services/githubService";
+import { getTechnologyStackAnalysis } from "../../services/githubService";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
-const COLORS = [
-  "#FACC15",
-  "#3B82F6",
-  "#FB923C",
-  "#A855F7",
-  "#22C55E",
-];
+const COLORS = ["#FACC15", "#3B82F6", "#FB923C", "#A855F7", "#22C55E"];
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -71,66 +63,40 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-const TechnologyStack = ({ username }) => {
-  const [activeIndex, setActiveIndex] =
-  useState(null);
+const TechnologyStack = ({ username,onLoaded,refreshKey }) => {
+  const [activeIndex, setActiveIndex] = useState(null);
 
-const [mounted, setMounted] =
-  useState(false);
+  const [mounted, setMounted] = useState(false);
 
-const [technologyData, setTechnologyData] =
-  useState([]);
+  const [technologyData, setTechnologyData] = useState([]);
 
-const [totalLanguages, setTotalLanguages] =
-  useState(0);
+  const [totalLanguages, setTotalLanguages] = useState(0);
 
   useEffect(() => {
-
-  const fetchTechnologyStack =
-    async () => {
-
+    const fetchTechnologyStack = async () => {
       try {
+        console.log("🔄 Refetching TechnologyStack");
+        const data = await getTechnologyStackAnalysis(username);
 
-        const data =
-          await getTechnologyStackAnalysis(
-            username  
-          );
+        const formattedData = data.top_languages.map((item, index) => ({
+          ...item,
+          color: COLORS[index % COLORS.length],
+        }));
 
-        const formattedData =
-          data.top_languages.map(
-            (item, index) => ({
-              ...item,
-              color:
-                COLORS[
-                  index %
-                    COLORS.length
-                ],
-            })
-          );
+        setTechnologyData(formattedData);
 
-        setTechnologyData(
-          formattedData
-        );
-
-        setTotalLanguages(
-          data.total_languages
-        );
-
+        setTotalLanguages(data.total_languages);
+        console.log("✅ TechnologyStack Loaded");
+        onLoaded?.();
       } catch (error) {
-
-        console.error(
-          "Technology Stack Error:",
-          error
-        );
-
+        console.error("Technology Stack Error:", error);
       }
     };
 
-  setMounted(true);
+    setMounted(true);
 
-  fetchTechnologyStack();
-
-}, [username]);
+    fetchTechnologyStack();
+  }, [username,refreshKey]);
 
   const isCompact = window.innerWidth < 1300;
 
@@ -150,8 +116,8 @@ const [totalLanguages, setTotalLanguages] =
 
       <div className="technology-wrapper">
         <div className="chart-section">
-  {technologyData.length > 0 ? (
-    <ResponsiveContainer width="100%" height="100%">
+          {technologyData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Tooltip
                   content={<CustomTooltip />}
@@ -187,11 +153,9 @@ const [totalLanguages, setTotalLanguages] =
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-  ) : (
-    <div className="tech-loading">
-      Loading...
-    </div>
-  )}
+          ) : (
+            <div className="tech-loading">Loading...</div>
+          )}
 
           <div className="chart-center">{totalLanguages}</div>
         </div>

@@ -1,63 +1,43 @@
 import "./MostStarredRepo.css";
 
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 
-import {
-  FaStar,
-  FaCodeBranch,
-} from "react-icons/fa";
+import { FaStar, FaCodeBranch } from "react-icons/fa";
 
-import {
-  getMostStarredRepository,
-} from "../../services/githubService";
+import { getMostStarredRepository } from "../../services/githubService";
 
-const MostStarredRepo = ({
-  username,
-}) => {
-  const [repo, setRepo] =
-    useState(null);
+const MostStarredRepo = ({ username, onLoaded,refreshKey }) => {
+  const [repo, setRepo] = useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchRepository();
-  }, [username]);
+  }, [username,refreshKey]);
 
-  const fetchRepository =
-    async () => {
-      try {
-        setLoading(true);
+  const fetchRepository = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Refetching MostStarredRepo");
 
-        const data =
-          await getMostStarredRepository(
-            username
-          );
+      const data = await getMostStarredRepository(username);
 
-        setRepo(data);
-      } catch (error) {
-        console.error(
-          "Most Starred Repo Error:",
-          error
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+      setRepo(data);
+      console.log("✅ MostStarredRepo Loaded");
+      onLoaded?.();
+    } catch (error) {
+      console.error("Most Starred Repo Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
       <div className="msr-card">
-        <h3 className="msr-title">
-          Most Starred Repository
-        </h3>
+        <h3 className="msr-title">Most Starred Repository</h3>
 
-        <div className="msr-loading">
-          Loading...
-        </div>
+        <div className="msr-loading">Loading...</div>
       </div>
     );
   }
@@ -65,22 +45,16 @@ const MostStarredRepo = ({
   if (!repo) {
     return (
       <div className="msr-card">
-        <h3 className="msr-title">
-          Most Starred Repository
-        </h3>
+        <h3 className="msr-title">Most Starred Repository</h3>
 
-        <div className="msr-loading">
-          No Repository Found
-        </div>
+        <div className="msr-loading">No Repository Found</div>
       </div>
     );
   }
 
   return (
     <div className="msr-card">
-      <h3 className="msr-title">
-        Most Starred Repository
-      </h3>
+      <h3 className="msr-title">Most Starred Repository</h3>
 
       <div className="msr-content">
         <a
@@ -91,25 +65,19 @@ const MostStarredRepo = ({
         >
           <FaCodeBranch className="msr-repo-icon" />
 
-          <span>
-            {repo.name}
-          </span>
+          <span>{repo.name}</span>
         </a>
 
         <div className="msr-stars">
           <FaStar className="msr-star-icon" />
 
-          <span>
-            {repo.stars}
-          </span>
+          <span>{repo.stars}</span>
         </div>
 
         <div className="msr-language">
           <span className="msr-dot"></span>
 
-          <span>
-            {repo.language || "Unknown"}
-          </span>
+          <span>{repo.language || "Unknown"}</span>
         </div>
       </div>
     </div>
