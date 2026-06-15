@@ -129,3 +129,13 @@ export const getActivityStatus = async (
 
   return response.data.data;
 };
+
+export const getDeveloperScore =
+  async (username) => {
+    const response =
+      await axios.get(
+        `${API_BASE_URL}/developer-score/${username}`
+      );
+
+    return response.data.data;
+  };

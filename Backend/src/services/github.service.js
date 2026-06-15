@@ -806,6 +806,145 @@ const getActivityStatus = async (username) => {
   };
 };
 
+
+const getDeveloperScore = async (
+  username
+) => {
+  const profile =
+    await getProfileAnalysis(
+      username
+    );
+
+  const repository =
+    await getRepositoryAnalysis(
+      username
+    );
+
+  const portfolio =
+    await getPortfolioReadinessAnalysis(
+      username
+    );
+
+  const activity =
+    await getActivityStatus(
+      username
+    );
+
+  let score = 0;
+
+  /* Followers */
+
+  if (profile.followers >= 20)
+    score += 10;
+  else if (
+    profile.followers >= 10
+  )
+    score += 8;
+  else if (
+    profile.followers >= 5
+  )
+    score += 6;
+  else if (
+    profile.followers >= 1
+  )
+    score += 3;
+
+  /* Repositories */
+
+  if (
+    repository.total_repos >= 20
+  )
+    score += 20;
+  else if (
+    repository.total_repos >= 15
+  )
+    score += 15;
+  else if (
+    repository.total_repos >= 10
+  )
+    score += 10;
+  else if (
+    repository.total_repos >= 5
+  )
+    score += 5;
+
+  /* Stars */
+
+  if (
+    repository.total_stars >= 20
+  )
+    score += 10;
+  else if (
+    repository.total_stars >= 10
+  )
+    score += 8;
+  else if (
+    repository.total_stars >= 5
+  )
+    score += 6;
+  else if (
+    repository.total_stars >= 1
+  )
+    score += 3;
+
+  /* Forks */
+
+  if (
+    repository.total_forks >= 10
+  )
+    score += 10;
+  else if (
+    repository.total_forks >= 5
+  )
+    score += 8;
+  else if (
+    repository.total_forks >= 1
+  )
+    score += 4;
+
+  /* Activity */
+
+  if (
+    activity.status ===
+    "Highly Active"
+  ) {
+    score += 25;
+  } else if (
+    activity.status ===
+    "Moderate"
+  ) {
+    score += 15;
+  } else if (
+    activity.status ===
+    "Low"
+  ) {
+    score += 5;
+  }
+
+  /* Portfolio */
+
+  score += Math.round(
+    portfolio.score * 0.25
+  );
+
+  score = Math.min(score, 100);
+
+  let level =
+    "Beginner";
+
+  if (score >= 80)
+    level = "Expert";
+  else if (score >= 60)
+    level = "Advanced";
+  else if (score >= 40)
+    level =
+      "Intermediate";
+
+  return {
+    score,
+    level,
+  };
+};
 module.exports = {
   getGithubProfile,
   getProfileAnalysis,
@@ -818,4 +957,5 @@ module.exports = {
   getMostStarredRepository,
   getMostForkedRepository,
   getActivityStatus,
+  getDeveloperScore,
 };

@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 
-const githubRoutes =
-  require("./routes/github.routes");
+const githubRoutes = require("./routes/github.routes");
+const developerScoreRoutes = require("./routes/developerScore.routes");
 
 const app = express();
 
@@ -18,5 +18,10 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/github", githubRoutes);
+
+app.use(
+  "/api/github/developer-score",
+  developerScoreRoutes
+);
 
 module.exports = app;

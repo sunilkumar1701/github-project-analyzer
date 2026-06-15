@@ -161,27 +161,20 @@
   height: 85px;
 }
 
-.gauge-track {
-  fill: none;
-
-  stroke: #24344d;
-
-  stroke-width: 12;
-
-  stroke-linecap: round;
-}
-
 .gauge-progress {
   fill: none;
-
   stroke: url(#scoreGradient);
-
-  stroke-width: 12;
-
+  stroke-width: 10;
   stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s ease;
+  transform-origin: center;
+}
 
-  stroke-dasharray: 220;
-  stroke-dashoffset: 18;
+.gauge-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 10;
+  stroke-linecap: round;
 }
 
 /* ---------------- */
