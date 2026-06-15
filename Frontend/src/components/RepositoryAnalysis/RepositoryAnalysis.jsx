@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import "./RepositoryAnalysis.css";
 
-import { FolderGit2, Star, GitFork, Trophy, Link2 } from "lucide-react";
 
+import { FolderGit2, Star, GitFork, Trophy, Link2 } from "lucide-react";
+import { useDashboardContext } from "../../context/DashboardContext";
 import { getRepositoryAnalysis } from "../../services/githubService";
 
 const RepositoryAnalysis = ({ username,onLoaded,refreshKey }) => {
+  
   const [repositoryStats, setRepositoryStats] = useState(null);
+
+    const { updateDashboardData } = useDashboardContext();
 
   useEffect(() => {
     const fetchRepositoryAnalysis = async () => {
@@ -14,8 +18,8 @@ const RepositoryAnalysis = ({ username,onLoaded,refreshKey }) => {
         console.log("🔄 Refetching RepositoryAnalysis");
         const data = await getRepositoryAnalysis(username);
         console.log("✅ RepositoryAnalysis Loaded");
-
         setRepositoryStats(data);
+        updateDashboardData("repositoryAnalysis", data);
         onLoaded?.();
       } catch (error) {
         console.error("Repository Analysis Error:", error);

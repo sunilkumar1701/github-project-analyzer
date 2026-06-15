@@ -10,6 +10,7 @@ import {
 } from "recharts";
 
 import { useEffect, useState } from "react";
+import { useDashboardContext } from "../../context/DashboardContext";
 
 import { getActivityAnalysis } from "../../services/githubService";
 
@@ -45,28 +46,26 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const ActivityAnalysis = ({ username , onLoaded ,refreshKey}) => {
+const ActivityAnalysis = ({ username, onLoaded, refreshKey }) => {
+  const { updateDashboardData } = useDashboardContext();
   const [activityData, setActivityData] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchActivityData();
-  }, [username,refreshKey]);
+  }, [username, refreshKey]);
 
   const fetchActivityData = async () => {
     try {
       setLoading(true);
-      console.log(
-  "🔄 Refetching ActivityAnalysis"
-);
+      console.log("🔄 Refetching ActivityAnalysis");
 
       const data = await getActivityAnalysis(username);
 
       setActivityData(data.activity || []);
-      console.log(
-  "✅ ActivityAnalysis Loaded"
-);
+      console.log("✅ ActivityAnalysis Loaded");
+      updateDashboardData("activityAnalysis", data.activity || []);
       onLoaded?.();
     } catch (error) {
       console.error("Activity Analysis Error:", error);

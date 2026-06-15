@@ -1,7 +1,7 @@
 import "./TechnologyStack.css";
 import { useState, useEffect } from "react";
 import { getTechnologyStackAnalysis } from "../../services/githubService";
-
+import { useDashboardContext } from "../../context/DashboardContext";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 const COLORS = ["#FACC15", "#3B82F6", "#FB923C", "#A855F7", "#22C55E"];
@@ -64,6 +64,7 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 const TechnologyStack = ({ username,onLoaded,refreshKey }) => {
+  const { updateDashboardData } = useDashboardContext();
   const [activeIndex, setActiveIndex] = useState(null);
 
   const [mounted, setMounted] = useState(false);
@@ -86,6 +87,10 @@ const TechnologyStack = ({ username,onLoaded,refreshKey }) => {
         setTechnologyData(formattedData);
 
         setTotalLanguages(data.total_languages);
+        updateDashboardData("technologyStack", {
+          topLanguages: formattedData,
+          totalLanguages: data.total_languages,
+        });
         console.log("✅ TechnologyStack Loaded");
         onLoaded?.();
       } catch (error) {

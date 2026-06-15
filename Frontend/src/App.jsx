@@ -16,11 +16,9 @@ import ActivityStatus from "./components/ActivityStatus/ActivityStatus";
 import ActionButtons from "./components/ActionButtons/ActionButtons";
 
 function App() {
-  const [username, setUsername] =
-    useState(null);
+  const [username, setUsername] = useState(null);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const dashboardRef = useRef(null);
 
@@ -30,71 +28,47 @@ function App() {
 
   const TOTAL_MODULES = 10;
 
-  const [loadedModules, setLoadedModules] =
-    useState(0);
+  const [loadedModules, setLoadedModules] = useState(0);
 
-  const [refreshKey, setRefreshKey] =
-    useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleModuleLoaded =
-    () => {
-      setLoadedModules(
-        (prev) => prev + 1
-      );
-    };
-const handleReanalyze = () => {
-  console.clear();
+  const handleModuleLoaded = () => {
+    setLoadedModules((prev) => prev + 1);
+  };
+  const handleReanalyze = () => {
+    console.clear();
 
-  console.log(
-    "================================="
-  );
+    console.log("=================================");
 
-  console.log(
-    "🔄 REANALYZE BUTTON CLICKED"
-  );
+    console.log("🔄 REANALYZE BUTTON CLICKED");
 
-  console.log(
-    "================================="
-  );
+    console.log("=================================");
 
-  setLoadedModules(0);
+    setLoadedModules(0);
 
-  setRefreshKey(
-    (prev) => prev + 1
-  );
-};
+    setRefreshKey((prev) => prev + 1);
+  };
 
-  const isDashboardLoading =
-    loadedModules < TOTAL_MODULES;
+  const isDashboardLoading = loadedModules < TOTAL_MODULES;
 
   /* ==========================
      LOAD USERNAME
   ========================== */
 
   useEffect(() => {
-    const loadUsername =
-      async () => {
-        try {
-          const githubUsername =
-            await getGithubUsername();
+    const loadUsername = async () => {
+      try {
+        const githubUsername = await getGithubUsername();
 
-          console.log(
-            "Detected GitHub Username:",
-            githubUsername
-          );
+        console.log("Detected GitHub Username:", githubUsername);
 
-          setUsername(
-            githubUsername
-          );
-        } catch (error) {
-          console.error(
-            "Username Detection Error:",
-            error
-          );
-        } finally {
-          setIsLoading(false);
-        }
-      };
+        setUsername(githubUsername);
+      } catch (error) {
+        console.error("Username Detection Error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
     loadUsername();
   }, []);
@@ -105,10 +79,8 @@ const handleReanalyze = () => {
         className="dashboard"
         style={{
           display: "flex",
-          justifyContent:
-            "center",
-          alignItems:
-            "center",
+          justifyContent: "center",
+          alignItems: "center",
           minHeight: "100vh",
           color: "#fff",
         }}
@@ -119,10 +91,7 @@ const handleReanalyze = () => {
   }
 
   return (
-    <div
-      className="dashboard"
-      ref={dashboardRef}
-    >
+    <div className="dashboard" ref={dashboardRef}>
       <div className="full-row">
         <ProfileCard
           username={username}
@@ -150,8 +119,7 @@ const handleReanalyze = () => {
       <div
         className="row"
         style={{
-          gridTemplateColumns:
-            "4fr 6fr",
+          gridTemplateColumns: "4fr 6fr",
         }}
       >
         <TechnologyStack
@@ -170,8 +138,7 @@ const handleReanalyze = () => {
       <div
         className="row"
         style={{
-          gridTemplateColumns:
-            "4fr 6fr",
+          gridTemplateColumns: "4fr 6fr",
         }}
       >
         <RepositoryQuality
@@ -190,8 +157,7 @@ const handleReanalyze = () => {
       <div
         className="row"
         style={{
-          gridTemplateColumns:
-            "3fr 3fr 4fr",
+          gridTemplateColumns: "3fr 3fr 4fr",
         }}
       >
         <MostStarredRepo
@@ -215,14 +181,9 @@ const handleReanalyze = () => {
 
       <div className="full-row">
         <ActionButtons
-          isLoading={
-            isLoading ||
-            isDashboardLoading
-          }
+          isLoading={isLoading || isDashboardLoading}
           dashboardRef={dashboardRef}
-          onReanalyze={
-            handleReanalyze
-          }
+          onReanalyze={handleReanalyze}
         />
       </div>
     </div>

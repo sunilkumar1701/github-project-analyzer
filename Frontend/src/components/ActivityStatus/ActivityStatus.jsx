@@ -3,10 +3,12 @@ import "./ActivityStatus.css";
 import { Activity } from "lucide-react";
 
 import { useEffect, useState } from "react";
+import { useDashboardContext } from "../../context/DashboardContext";
 
 import { getActivityStatus } from "../../services/githubService";
 
 const ActivityStatus = ({ username,onLoaded,refreshKey }) => {
+  const { updateDashboardData } = useDashboardContext();
   const [activityData, setActivityData] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -24,6 +26,7 @@ const ActivityStatus = ({ username,onLoaded,refreshKey }) => {
 
       setActivityData(data);
       console.log("✅ ActivityStatus Loaded");
+      updateDashboardData("activityStatus", data);
       onLoaded?.();
     } catch (error) {
       console.error("Activity Status Error:", error);

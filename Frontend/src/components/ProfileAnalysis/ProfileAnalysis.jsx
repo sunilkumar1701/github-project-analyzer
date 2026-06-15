@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import "./ProfileAnalysis.css";
 
 import { Users, UserRound, FolderGit2, Clock3, Link2 } from "lucide-react";
-
+import { useDashboardContext } from "../../context/DashboardContext";
 import { getProfileAnalysis } from "../../services/githubService";
 
 const ProfileAnalysis = ({ username, onLoaded, refreshKey }) => {
   const [analysis, setAnalysis] = useState(null);
+  const { updateDashboardData } = useDashboardContext();
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -15,6 +16,7 @@ const ProfileAnalysis = ({ username, onLoaded, refreshKey }) => {
         const data = await getProfileAnalysis(username);
         console.log("✅ ProfileAnalysis Loaded");
         setAnalysis(data);
+        updateDashboardData("profileAnalysis", data);
         onLoaded?.();
       } catch (error) {
         console.error("Error fetching profile analysis:", error);

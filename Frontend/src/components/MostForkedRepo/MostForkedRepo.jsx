@@ -3,10 +3,11 @@ import "./MostForkedRepo.css";
 import { useEffect, useState } from "react";
 
 import { FaCodeBranch } from "react-icons/fa";
-
+import { useDashboardContext } from "../../context/DashboardContext";
 import { getMostForkedRepository } from "../../services/githubService";
 
 const MostForkedRepo = ({ username, onLoaded,refreshKey }) => {
+  const { updateDashboardData } = useDashboardContext();
   const [repo, setRepo] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,7 @@ const MostForkedRepo = ({ username, onLoaded,refreshKey }) => {
 
       setRepo(data);
       console.log("✅ MostForkedRepo Loaded");
+      updateDashboardData("mostForkedRepo", data);
       onLoaded?.();
     } catch (error) {
       console.error("Most Forked Repo Error:", error);

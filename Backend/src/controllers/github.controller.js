@@ -278,8 +278,7 @@ const getTechnologyStackAnalysis =
 
 
 
-  const getActivityStatus =
-  async (req, res) => {
+  const getActivityStatus = async (req, res) => {
 
     try {
 

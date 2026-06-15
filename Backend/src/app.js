@@ -3,6 +3,7 @@ const cors = require("cors");
 
 const githubRoutes = require("./routes/github.routes");
 const developerScoreRoutes = require("./routes/developerScore.routes");
+const chatRoutes = require("./routes/chat.routes");
 
 const app = express();
 
@@ -23,5 +24,7 @@ app.use(
   "/api/github/developer-score",
   developerScoreRoutes
 );
+
+app.use("/api/chat", chatRoutes);
 
 module.exports = app;

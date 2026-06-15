@@ -3,17 +3,18 @@ import "./RepositoryQuality.css";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 import { useEffect, useState } from "react";
-
+import { useDashboardContext } from "../../context/DashboardContext";
 import { getRepositoryQualityAnalysis } from "../../services/githubService";
 
 const RepositoryQuality = ({ username, onLoaded, refreshKey }) => {
   const [qualityData, setQualityData] = useState(null);
+  const { updateDashboardData } = useDashboardContext();
 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchRepositoryQuality();
-  }, [username,refreshKey]);
+  }, [username, refreshKey]);
 
   const fetchRepositoryQuality = async () => {
     try {
@@ -73,6 +74,9 @@ const RepositoryQuality = ({ username, onLoaded, refreshKey }) => {
         metrics,
       });
       console.log("✅ RepositoryQuality Loaded");
+      updateDashboardData("repositoryQuality", {
+        score: data.score,
+      });
       onLoaded?.();
     } catch (error) {
       console.error("Repository Quality Error:", error);

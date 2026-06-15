@@ -3,10 +3,11 @@ import "./MostStarredRepo.css";
 import { useEffect, useState } from "react";
 
 import { FaStar, FaCodeBranch } from "react-icons/fa";
-
+import { useDashboardContext } from "../../context/DashboardContext";
 import { getMostStarredRepository } from "../../services/githubService";
 
 const MostStarredRepo = ({ username, onLoaded,refreshKey }) => {
+  const { updateDashboardData } = useDashboardContext();
   const [repo, setRepo] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,7 @@ const MostStarredRepo = ({ username, onLoaded,refreshKey }) => {
 
       setRepo(data);
       console.log("✅ MostStarredRepo Loaded");
+      updateDashboardData("mostStarredRepo", data);
       onLoaded?.();
     } catch (error) {
       console.error("Most Starred Repo Error:", error);

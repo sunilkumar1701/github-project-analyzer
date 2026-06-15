@@ -3,10 +3,12 @@ import "./PortfolioReadiness.css";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 import { useEffect, useState } from "react";
-
+import { useDashboardContext } from "../../context/DashboardContext";
 import { getPortfolioReadinessAnalysis } from "../../services/githubService";
 
 const PortfolioReadiness = ({ username ,onLoaded,refreshKey}) => {
+
+  const { updateDashboardData } = useDashboardContext();
   const [data, setData] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,7 @@ const PortfolioReadiness = ({ username ,onLoaded,refreshKey}) => {
       const response = await getPortfolioReadinessAnalysis(username);
 
       setData(response);
+      updateDashboardData("portfolioReadiness", response);
       console.log("✅ PortfolioReadiness Loaded");
       onLoaded?.();
     } catch (error) {

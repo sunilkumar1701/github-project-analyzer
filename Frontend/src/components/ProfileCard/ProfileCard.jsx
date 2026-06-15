@@ -1,105 +1,64 @@
 import { useEffect, useState } from "react";
 import "./ProfileCard.css";
-import {
-  getProfile,
-  getDeveloperScore,
-} from "../../services/githubService";
+import { getProfile, getDeveloperScore } from "../../services/githubService";
+import { useDashboardContext } from "../../context/DashboardContext";
 
-const ProfileCard = ({
-  username,
-  onLoaded,
-  refreshKey,
-}) => {
-  const [profile, setProfile] =
-    useState(null);
+const ProfileCard = ({ username, onLoaded, refreshKey }) => {
+  const [profile, setProfile] = useState(null);
 
-  const [
-    developerScore,
-    setDeveloperScore,
-  ] = useState(null);
+  const [developerScore, setDeveloperScore] = useState(null);
+
+  const { updateDashboardData } = useDashboardContext();
 
   useEffect(() => {
-    const fetchProfile =
-      async () => {
-        try {
-          console.log(
-            "🔄 Refetching ProfileCard"
-          );
+    const fetchProfile = async () => {
+      try {
+        console.log("🔄 Refetching ProfileCard");
 
-          const [
-            profileData,
-            scoreData,
-          ] = await Promise.all([
-            getProfile(username),
-            getDeveloperScore(
-              username
-            ),
-          ]);
+        const [profileData, scoreData] = await Promise.all([
+          getProfile(username),
+          getDeveloperScore(username),
+        ]);
 
-          setProfile(
-            profileData
-          );
+        setProfile(profileData);
 
-          setDeveloperScore(
-            scoreData
-          );
+        setDeveloperScore(scoreData);
 
-          console.log(
-            "Developer Score:",
-            scoreData
-          );
+        updateDashboardData("developerScore", scoreData);
 
-          console.log(
-            "✅ ProfileCard Loaded"
-          );
+        console.log("Developer Score:", scoreData);
 
-          onLoaded?.();
-        } catch (error) {
-          console.error(
-            "ProfileCard Error:",
-            error
-          );
-        }
-      };
+        console.log("✅ ProfileCard Loaded");
+
+        onLoaded?.();
+      } catch (error) {
+        console.error("ProfileCard Error:", error);
+      }
+    };
 
     fetchProfile();
   }, [username, refreshKey]);
 
   if (!profile) {
-    return (
-      <div className="module-card profile-card">
-        Loading Profile...
-      </div>
-    );
+    return <div className="module-card profile-card">Loading Profile...</div>;
   }
 
-  const getWebsiteLabel = (
-    url
-  ) => {
+  const getWebsiteLabel = (url) => {
     if (!url) return "";
 
     try {
-      const hostname =
-        new URL(
-          url.startsWith("http")
-            ? url
-            : `https://${url}`
-        ).hostname;
+      const hostname = new URL(url.startsWith("http") ? url : `https://${url}`)
+        .hostname;
 
-      return hostname.replace(
-        "www.",
-        ""
-      );
+      return hostname.replace("www.", "");
     } catch {
       return url;
     }
   };
 
-  const score =
-    developerScore?.score || 0;
+  const score = developerScore?.score || 0;
 
-  const dashOffset =
-    220 - (220 * score) / 100;
+  const dashOffset = 220 - (220 * score) / 100;
 
   return (
     <div className="module-card profile-card">
@@ -113,14 +72,9 @@ const ProfileCard = ({
         />
 
         <div className="profile-details">
-          <h2>
-            {profile.name ||
-              profile.login}
-          </h2>
+          <h2>{profile.name || profile.login}</h2>
 
-          <p className="username">
-            @{profile.login}
-          </p>
+          <p className="username">@{profile.login}</p>
 
           <div className="profile-meta">
             {profile.location && (
@@ -133,18 +87,14 @@ const ProfileCard = ({
                   <path d="M8 0a5 5 0 0 0-5 5c0 3.75 5 11 5 11s5-7.25 5-11a5 5 0 0 0-5-5Zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z" />
                 </svg>
 
-                <span>
-                  {profile.location}
-                </span>
+                <span>{profile.location}</span>
               </div>
             )}
 
             {profile.blog && (
               <a
                 href={
-                  profile.blog.startsWith(
-                    "http"
-                  )
+                  profile.blog.startsWith("http")
                     ? profile.blog
                     : `https://${profile.blog}`
                 }
@@ -161,11 +111,7 @@ const ProfileCard = ({
                   <path d="M8.225 12.725a3.25 3.25 0 0 1-4.596-4.596l1.944-1.944a3.25 3.25 0 0 1 4.596 0 .75.75 0 0 1-1.06 1.06 1.75 1.75 0 0 0-2.475 0L4.69 9.19a1.75 1.75 0 1 0 2.475 2.475l1.06-1.06a.75.75 0 1 1 1.06 1.06l-1.06 1.06Z" />
                 </svg>
 
-                <span>
-                  {getWebsiteLabel(
-                    profile.blog
-                  )}
-                </span>
+                <span>{getWebsiteLabel(profile.blog)}</span>
               </a>
             )}
           </div>
@@ -177,32 +123,22 @@ const ProfileCard = ({
       <div className="profile-right">
         <div className="score-info">
           <div className="score-label">
-            <span className="crown">
-              👑
-            </span>
+            <span className="crown">👑</span>
 
             <div>
-              <p className="score-heading">
-                Developer
-              </p>
+              <p className="score-heading">Developer</p>
 
-              <p className="score-heading">
-                Score
-              </p>
+              <p className="score-heading">Score</p>
             </div>
           </div>
 
           <div className="expert-badge">
-            {developerScore?.level ||
-              "Beginner"}
+            {developerScore?.level || "Beginner"}
           </div>
         </div>
 
         <div className="gauge-wrapper">
-          <svg
-            className="score-gauge"
-            viewBox="0 0 200 120"
-          >
+          <svg className="score-gauge" viewBox="0 0 200 120">
             <defs>
               <linearGradient
                 id="scoreGradient"
@@ -211,31 +147,20 @@ const ProfileCard = ({
                 x2="100%"
                 y2="0%"
               >
-                <stop
-                  offset="0%"
-                  stopColor="#9333EA"
-                />
+                <stop offset="0%" stopColor="#9333EA" />
 
-                <stop
-                  offset="100%"
-                  stopColor="#22C55E"
-                />
+                <stop offset="100%" stopColor="#22C55E" />
               </linearGradient>
             </defs>
 
-            <path
-              d="M30 100 A70 70 0 0 1 170 100"
-              className="gauge-track"
-            />
+            <path d="M30 100 A70 70 0 0 1 170 100" className="gauge-track" />
 
             <path
               d="M30 100 A70 70 0 0 1 170 100"
               className="gauge-progress"
               style={{
-                strokeDasharray:
-                  220,
-                strokeDashoffset:
-                  dashOffset,
+                strokeDasharray: 220,
+                strokeDashoffset: dashOffset,
               }}
             />
           </svg>
