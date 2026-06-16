@@ -1,23 +1,23 @@
 const { executeMcpTool } = require("./mcp.service");
-const { getMcpTool } = require("../utils/mcpToolMapper");
 
-const processQuestion = async ({
-  username,
-  source,
-  dashboardContext,
-  question,
-}) => {
+const { selectToolWithGemini } = require("./gemini.service");
+
+const { generateAnswer } = require("./answerGeneration.service");
+
+const processQuestion = async ({ source, dashboardContext, question }) => {
   /*
    * DASHBOARD
    */
 
   if (source === "dashboard") {
-    console.log("Using Dashboard Context");
+    const answer = await generateAnswer({
+      question,
+      data: dashboardContext,
+    });
 
     return {
-      question,
       source: "dashboard",
-      data: dashboardContext,
+      answer,
     };
   }
 
@@ -25,33 +25,19 @@ const processQuestion = async ({
    * MCP
    */
 
-  if (source === "mcp") {
-    console.log("Using GitHub MCP");
+  const toolConfig = await selectToolWithGemini(question);
 
-    const toolConfig = getMcpTool(question);
+  const mcpResult = await executeMcpTool(toolConfig.tool, toolConfig.args);
 
-    if (!toolConfig) {
-      return {
-        question,
-        source: "mcp",
-        data: "No MCP Tool Found",
-      };
-    }
-
-    const result = await executeMcpTool(toolConfig.tool, toolConfig.args);
-
-    return {
-      question,
-      source: "mcp",
-      tool: toolConfig.tool,
-      data: result,
-    };
-  }
+  const answer = await generateAnswer({
+    question,
+    data: mcpResult,
+  });
 
   return {
-    question,
-    source: "unknown",
-    data: null,
+    source: "mcp",
+    tool: toolConfig.tool,
+    answer,
   };
 };
 
