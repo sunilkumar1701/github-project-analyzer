@@ -75,8 +75,42 @@ const RepositoryQuality = ({ username, onLoaded, refreshKey }) => {
       });
       console.log("✅ RepositoryQuality Loaded");
       updateDashboardData("repositoryQuality", {
-        score: data.score,
-      });
+  score: data.score,
+
+  totalRepos: data.total_repos,
+
+  label:
+    data.score >= 90
+      ? "Excellent"
+      : data.score >= 70
+      ? "Good"
+      : data.score >= 50
+      ? "Average"
+      : "Poor",
+
+  metrics: [
+    {
+      name: "README",
+      score: data.metrics.readme,
+      count: data.counts.readme,
+    },
+    {
+      name: "Description",
+      score: data.metrics.description,
+      count: data.counts.description,
+    },
+    {
+      name: "Documentation",
+      score: data.metrics.documentation,
+      count: data.counts.documentation,
+    },
+    {
+      name: "Topics",
+      score: data.metrics.topics,
+      count: data.counts.topics,
+    },
+  ],
+});
       onLoaded?.();
     } catch (error) {
       console.error("Repository Quality Error:", error);

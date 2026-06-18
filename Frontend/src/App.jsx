@@ -15,7 +15,13 @@ import MostForkedRepo from "./components/MostForkedRepo/MostForkedRepo";
 import ActivityStatus from "./components/ActivityStatus/ActivityStatus";
 import ActionButtons from "./components/ActionButtons/ActionButtons";
 
+import { useDashboardContext } from "./context/DashboardContext";
+
+
+
 function App() {
+
+  const { dashboardData } = useDashboardContext();
   const [username, setUsername] = useState(null);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -184,6 +190,8 @@ function App() {
           isLoading={isLoading || isDashboardLoading}
           dashboardRef={dashboardRef}
           onReanalyze={handleReanalyze}
+          username={username}
+          dashboardData={dashboardData}
         />
       </div>
     </div>

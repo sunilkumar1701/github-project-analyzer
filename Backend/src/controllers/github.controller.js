@@ -193,8 +193,7 @@ const getTechnologyStackAnalysis =
       });
     }
   };  
-  const getPortfolioReadinessAnalysis =
-  async (req, res) => {
+  const getPortfolioReadinessAnalysis = async (req, res) => {
     try {
 
       const { username } =

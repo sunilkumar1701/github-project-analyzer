@@ -6,19 +6,12 @@ const parseMcpResponse = (rawResponse) => {
       return rawResponse;
     }
 
-    const dataMatch = rawResponse.match(/data:\s*(\{.*\})/s);
+    const jsonText = rawResponse
+      .replace("event: message", "")
+      .replace("data:", "")
+      .trim();
 
-    if (!dataMatch) {
-      return {
-        error: true,
-        message: "Unable to extract JSON from MCP response",
-        raw: rawResponse,
-      };
-    }
-
-    const parsed = JSON.parse(dataMatch[1]);
-
-    return parsed;
+    return JSON.parse(jsonText);
   } catch (error) {
     return {
       error: true,
@@ -46,23 +39,16 @@ const executeMcpTool = async (toolName, args = {}) => {
           Authorization: `Bearer ${process.env.GITHUB_MCP_PAT}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     const parsedResponse = parseMcpResponse(response.data);
-
-    console.log("\n========== MCP RESPONSE ==========\n");
-    console.log(JSON.stringify(parsedResponse, null, 2));
-    console.log("\n==================================\n");
 
     return parsedResponse;
   } catch (error) {
     const errorResponse = {
       error: true,
-      message:
-        error.response?.data ||
-        error.message ||
-        "Unknown MCP Error",
+      message: error.response?.data || error.message || "Unknown MCP Error",
     };
 
     console.log("\n========== MCP ERROR ==========\n");
@@ -73,6 +59,44 @@ const executeMcpTool = async (toolName, args = {}) => {
   }
 };
 
+const getAvailableTools = async () => {
+  try {
+    const response = await axios.post(
+      "https://api.githubcopilot.com/mcp/",
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/list",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GITHUB_MCP_PAT}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const parsedResponse = parseMcpResponse(response.data);
+
+    console.log("\n========== TOOLS RESPONSE ==========\n");
+
+    console.log(`Loaded ${parsedResponse?.result?.tools?.length || 0} tools`);
+
+    console.log("\n====================================\n");
+
+    return parsedResponse;
+  } catch (error) {
+    console.log("\n========== TOOLS ERROR ==========\n");
+
+    console.log(error.response?.data || error.message);
+
+    console.log("\n=================================\n");
+
+    return null;
+  }
+};
+
 module.exports = {
   executeMcpTool,
+  getAvailableTools,
 };

@@ -4,28 +4,40 @@ const generateAnswer = async ({
   question,
   data,
 }) => {
-  const prompt = `
-You are a GitHub Analyst AI.
 
-Question:
+  const prompt = `
+You are an expert GitHub Analyst AI.
+
+User Question:
 ${question}
 
-Data:
+Tool Result:
 ${JSON.stringify(data, null, 2)}
 
-Generate a concise and professional answer.
+Instructions:
 
-Do not explain the raw JSON.
-Summarize it for the user.
+1. Answer the user's question directly.
+2. Never mention JSON.
+3. Never mention tool results.
+4. Extract only useful information.
+5. Use bullet points when appropriate.
+6. Keep answers concise and professional.
+7. If multiple repositories/users are returned:
+   show the top 5 most relevant.
+8. If no results are found:
+   politely say no results were found.
+9. Do not hallucinate information.
+10. Return ONLY the final answer.
+
+Generate the final answer only.
 `;
 
-  const response =
-    await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+  });
 
-  return response.text;
+  return response.text.trim();
 };
 
 module.exports = {

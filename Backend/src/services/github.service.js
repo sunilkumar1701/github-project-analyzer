@@ -413,123 +413,140 @@ console.log("githubApi =", githubApi);
       },
     };
   };
-  const getPortfolioReadinessAnalysis =
-  async (username) => {
 
-    const userResponse =
+
+  const getPortfolioReadinessAnalysis = async (username) => {
+
+  const userResponse =
+    await githubApi.get(
+      `/users/${username}`
+    );
+
+  const user =
+    userResponse.data;
+
+  const checks = [];
+
+  // Bio
+  const hasBio =
+    !!(
+      user.bio &&
+      user.bio.trim()
+    );
+
+  checks.push({
+    name: "Bio",
+    status: hasBio,
+    score: hasBio ? 20 : 0,
+    maxScore: 20,
+  });
+
+  // Profile Photo
+  const hasProfilePhoto =
+    !!user.avatar_url;
+
+  checks.push({
+    name: "Profile Photo",
+    status: hasProfilePhoto,
+    score: hasProfilePhoto ? 20 : 0,
+    maxScore: 20,
+  });
+
+  // Website
+  const hasWebsite =
+    !!(
+      user.blog &&
+      user.blog.trim()
+    );
+
+  checks.push({
+    name: "Website",
+    status: hasWebsite,
+    score: hasWebsite ? 20 : 0,
+    maxScore: 20,
+  });
+
+  // README Quality
+  let readmeQuality =
+    false;
+
+  try {
+
+    const readmeRepo =
       await githubApi.get(
-        `/users/${username}`
+        `/repos/${username}/${username}`
       );
 
-    const user =
-      userResponse.data;
+    if (
+      readmeRepo.data
+    ) {
+      readmeQuality =
+        true;
+    }
 
-    const checks = [];
+  } catch {}
 
-    // Bio
-    checks.push({
-      name: "Bio",
-      status:
-        !!(
-          user.bio &&
-          user.bio.trim()
-        ),
-    });
+  checks.push({
+    name: "README Quality",
+    status: readmeQuality,
+    score: readmeQuality ? 20 : 0,
+    maxScore: 20,
+  });
 
-    // Profile Photo
-    checks.push({
-      name:
-        "Profile Photo",
-      status:
-        !!user.avatar_url,
-    });
+  // Pinned Repositories
+  let pinnedRepos =
+    false;
 
-    // Website
-    checks.push({
-      name: "Website",
-      status:
-        !!(
-          user.blog &&
-          user.blog.trim()
-        ),
-    });
+  try {
 
-    // README Quality
-    let readmeQuality =
-      false;
-
-    try {
-
-      const readmeRepo =
-        await githubApi.get(
-          `/repos/${username}/${username}`
-        );
-
-      if (
-        readmeRepo.data
-      ) {
-        readmeQuality =
-          true;
-      }
-
-    } catch {}
-
-    checks.push({
-      name:
-        "README Quality",
-      status:
-        readmeQuality,
-    });
-
-    // Pinned Repositories
-    let pinnedRepos =
-      false;
-
-    try {
-
-      const reposResponse =
-        await githubApi.get(
-          `/users/${username}/repos?sort=updated&per_page=6`
-        );
-
-      const repos =
-        reposResponse.data.filter(
-          (repo) => !repo.fork
-        );
-
-      pinnedRepos =
-        repos.length > 0;
-
-    } catch {}
-
-    checks.push({
-      name:
-        "Pinned Repos",
-      status:
-        pinnedRepos,
-    });
-
-    const completed =
-      checks.filter(
-        (item) =>
-          item.status
-      ).length;
-
-    const score =
-      Math.round(
-        (completed /
-          checks.length) *
-          100
+    const reposResponse =
+      await githubApi.get(
+        `/users/${username}/repos?sort=updated&per_page=6`
       );
 
-    return {
-      score,
-      completed,
-      total:
-        checks.length,
-      checks,
-    };
+    const repos =
+      reposResponse.data.filter(
+        (repo) => !repo.fork
+      );
+
+    pinnedRepos =
+      repos.length > 0;
+
+  } catch {}
+
+  checks.push({
+    name: "Pinned Repos",
+    status: pinnedRepos,
+    score: pinnedRepos ? 20 : 0,
+    maxScore: 20,
+  });
+
+  const completed =
+    checks.filter(
+      (item) =>
+        item.status
+    ).length;
+
+  const totalScore =
+    checks.reduce(
+      (sum, item) =>
+        sum + item.score,
+      0
+    );
+
+  const score =
+    Math.round(
+      totalScore
+    );
+
+  return {
+    score,
+    completed,
+    total:
+      checks.length,
+    checks,
   };
+};
 
 
 const getMostStarredRepository = async (username) => {

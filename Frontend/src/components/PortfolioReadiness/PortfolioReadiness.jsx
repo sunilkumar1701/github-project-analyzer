@@ -6,8 +6,7 @@ import { useEffect, useState } from "react";
 import { useDashboardContext } from "../../context/DashboardContext";
 import { getPortfolioReadinessAnalysis } from "../../services/githubService";
 
-const PortfolioReadiness = ({ username ,onLoaded,refreshKey}) => {
-
+const PortfolioReadiness = ({ username, onLoaded, refreshKey }) => {
   const { updateDashboardData } = useDashboardContext();
   const [data, setData] = useState(null);
 
@@ -17,25 +16,60 @@ const PortfolioReadiness = ({ username ,onLoaded,refreshKey}) => {
     if (username) {
       fetchPortfolioReadiness();
     }
-  }, [username,refreshKey]);
+  }, [username, refreshKey]);
 
-  const fetchPortfolioReadiness = async () => {
-    try {
-      setLoading(true);
-      console.log("🔄 Refetching PortfolioReadiness");
+ const fetchPortfolioReadiness = async () => {
+  try {
+    setLoading(true);
 
-      const response = await getPortfolioReadinessAnalysis(username);
+    console.log(
+      "🔄 Refetching PortfolioReadiness"
+    );
 
-      setData(response);
-      updateDashboardData("portfolioReadiness", response);
-      console.log("✅ PortfolioReadiness Loaded");
-      onLoaded?.();
-    } catch (error) {
-      console.error("Portfolio Readiness Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const response =
+      await getPortfolioReadinessAnalysis(
+        username
+      );
+
+    console.log(response);
+
+    setData(response);
+
+    updateDashboardData(
+      "portfolioReadiness",
+      {
+        score: response.score,
+
+        completed:
+          response.completed,
+
+        total:
+          response.total,
+
+        checks:
+          response.checks,
+      }
+    );
+
+    console.log(
+      "✅ PortfolioReadiness Loaded"
+    );
+
+    onLoaded?.();
+
+  } catch (error) {
+
+    console.error(
+      "Portfolio Readiness Error:",
+      error
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
 
   if (loading || !data) {
     return (
