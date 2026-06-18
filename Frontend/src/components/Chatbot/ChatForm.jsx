@@ -1,7 +1,12 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 const ChatForm = ({ setChatHistory, generateBotResponse }) => {
   const inputRef = useRef();
+
+  // Auto focus when chatbot opens
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -21,6 +26,9 @@ const ChatForm = ({ setChatHistory, generateBotResponse }) => {
     inputRef.current.value = "";
 
     generateBotResponse(message);
+
+    // Keep focus after send
+    inputRef.current.focus();
   };
 
   return (

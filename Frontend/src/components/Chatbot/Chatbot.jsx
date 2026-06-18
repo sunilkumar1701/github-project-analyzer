@@ -1,6 +1,6 @@
 import "./Chatbot.css";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import ChatForm from "./ChatForm";
 import ChatMessage from "./ChatMessage";
@@ -11,12 +11,24 @@ import { useDashboardContext } from "../../context/DashboardContext";
 const Chatbot = ({ onClose, username }) => {
   const { dashboardData } = useDashboardContext();
 
+  const bottomRef = useRef(null);
+
   const [chatHistory, setChatHistory] = useState([
     {
       role: "model",
       text: "👋 Hi! I am your GitHub AI Assistant.\n\nAsk me anything about this profile.",
     },
   ]);
+
+  // Auto scroll whenever chat changes
+  useEffect(() => {
+  requestAnimationFrame(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  });
+}, [chatHistory]);
 
   const generateBotResponse = async (message) => {
     try {
@@ -28,6 +40,7 @@ const Chatbot = ({ onClose, username }) => {
 
       console.log("\n===========================================\n");
 
+      // Add Thinking...
       setChatHistory((prev) => [
         ...prev,
         {
@@ -35,47 +48,54 @@ const Chatbot = ({ onClose, username }) => {
           text: "Thinking...",
         },
       ]);
-      console.log(JSON.stringify(dashboardData, null, 2));
+
       const response = await sendChatMessage({
         username,
         message,
         dashboardContext: dashboardData,
       });
 
+      // Typewriter effect
+      const fullText = response.answer;
+
+      let currentText = "";
+
+      for (let i = 0; i < fullText.length; i++) {
+        currentText += fullText[i];
+
+        setChatHistory((prev) => {
+          const updated = [...prev];
+
+          updated[updated.length - 1] = {
+            role: "model",
+            text: currentText,
+          };
+
+          return updated;
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    } catch (error) {
+      console.error(error);
+
+      const errorMessage =
+        error.response?.data?.answer ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to get response from AI.";
+
       setChatHistory((prev) => {
         const updated = [...prev];
 
         updated[updated.length - 1] = {
           role: "model",
-          text: response.answer,
+          text: `❌ ${errorMessage}`,
         };
 
         return updated;
       });
-    } catch (error) {
-
-  console.error(error);
-
-  const errorMessage =
-    error.response?.data?.answer ||
-    error.response?.data?.message ||
-    error.message ||
-    "Failed to get response from AI.";
-
-  setChatHistory((prev) => {
-
-    const updated = [...prev];
-
-    updated[updated.length - 1] = {
-      role: "model",
-      text: `❌ ${errorMessage}`,
-    };
-
-    return updated;
-
-  });
-
-}
+    }
   };
 
   return (
@@ -92,6 +112,8 @@ const Chatbot = ({ onClose, username }) => {
         {chatHistory.map((chat, index) => (
           <ChatMessage key={index} chat={chat} />
         ))}
+
+        <div ref={bottomRef}></div>
       </div>
 
       <div className="chat-footer">
