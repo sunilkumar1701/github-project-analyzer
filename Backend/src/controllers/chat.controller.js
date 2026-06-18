@@ -23,10 +23,12 @@ const chatWithGithub = async (req, res) => {
   } catch (error) {
     console.error(error);
 
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+     return res.status(500).json({
+    success: false,
+    answer:
+      error.message ||
+      "Something went wrong.",
+  });
   }
 };
 

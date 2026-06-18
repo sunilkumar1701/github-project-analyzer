@@ -53,19 +53,29 @@ const Chatbot = ({ onClose, username }) => {
         return updated;
       });
     } catch (error) {
-      console.error(error);
 
-      setChatHistory((prev) => {
-        const updated = [...prev];
+  console.error(error);
 
-        updated[updated.length - 1] = {
-          role: "model",
-          text: "❌ Failed to get response from AI.",
-        };
+  const errorMessage =
+    error.response?.data?.answer ||
+    error.response?.data?.message ||
+    error.message ||
+    "Failed to get response from AI.";
 
-        return updated;
-      });
-    }
+  setChatHistory((prev) => {
+
+    const updated = [...prev];
+
+    updated[updated.length - 1] = {
+      role: "model",
+      text: `❌ ${errorMessage}`,
+    };
+
+    return updated;
+
+  });
+
+}
   };
 
   return (

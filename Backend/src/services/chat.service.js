@@ -1,6 +1,7 @@
 const { executeMcpTool } = require("./mcp.service");
 const { selectToolWithGemini } = require("./gemini.service");
 const { generateAnswer } = require("./answerGeneration.service");
+const { generateErrorAnswer } = require("./errorAnswer.service");
 
 const processQuestion = async ({
   username,
@@ -8,22 +9,18 @@ const processQuestion = async ({
   dashboardContext,
   question,
 }) => {
-
   console.log("QUESTION:", question);
-console.log("USERNAME:", username);
-console.log("SOURCE:", source);
+  console.log("USERNAME:", username);
+  console.log("SOURCE:", source);
 
   console.log(
-    source === "dashboard"
-      ? "USING DASHBOARD CONTEXT"
-      : "USING GITHUB MCP"
+    source === "dashboard" ? "USING DASHBOARD CONTEXT" : "USING GITHUB MCP",
   );
 
   /*
    * DASHBOARD
    */
   if (source === "dashboard") {
-
     const answer = await generateAnswer({
       question,
       data: dashboardContext,
@@ -39,22 +36,31 @@ console.log("SOURCE:", source);
    * MCP
    */
 
-  const toolConfig = await selectToolWithGemini(question,username);
+  try {
+    const toolConfig = await selectToolWithGemini(question, username);
 
-  const mcpResult = await executeMcpTool(
-    toolConfig.tool,
-    toolConfig.args
-  );
+    const mcpResult = await executeMcpTool(toolConfig.tool, toolConfig.args);
 
-  const answer = await generateAnswer({
-    question,
-    data: mcpResult,
-  });
+    const answer = await generateAnswer({
+      question,
+      data: mcpResult,
+    });
 
-  return {
-    source: "mcp",
-    answer,
-  };
+    return {
+      source: "mcp",
+      answer,
+    };
+  } catch (error) {
+    const answer = await generateErrorAnswer({
+      question,
+      error: error.message,
+    });
+
+    return {
+      source: "mcp",
+      answer,
+    };
+  }
 };
 
 module.exports = {
