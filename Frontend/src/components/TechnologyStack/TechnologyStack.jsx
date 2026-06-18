@@ -63,7 +63,7 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-const TechnologyStack = ({ username,onLoaded,refreshKey }) => {
+const TechnologyStack = ({ username, onLoaded, refreshKey }) => {
   const { updateDashboardData } = useDashboardContext();
   const [activeIndex, setActiveIndex] = useState(null);
 
@@ -101,7 +101,7 @@ const TechnologyStack = ({ username,onLoaded,refreshKey }) => {
     setMounted(true);
 
     fetchTechnologyStack();
-  }, [username,refreshKey]);
+  }, [username, refreshKey]);
 
   const isCompact = window.innerWidth < 1300;
 

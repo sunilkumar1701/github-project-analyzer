@@ -1,20 +1,28 @@
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/chat";
+import apiClient from "./apiClient";
 
 export const sendChatMessage = async ({
   username,
   message,
   dashboardContext,
 }) => {
-  const response = await axios.post(
-    API_URL,
-    {
-      username,
-      message,
-      dashboardContext,
-    }
-  );
+  try {
+    const response = await apiClient.post(
+      "/chat",
+      {
+        username,
+        message,
+        dashboardContext,
+      },
+    );
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    throw {
+      status: error.status,
+
+      message:
+        error.message ||
+        "Unable to connect to AI server.",
+    };
+  }
 };

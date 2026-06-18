@@ -1,37 +1,75 @@
 import { useEffect, useState } from "react";
 import "./RepositoryAnalysis.css";
 
-
 import { FolderGit2, Star, GitFork, Trophy, Link2 } from "lucide-react";
+
 import { useDashboardContext } from "../../context/DashboardContext";
 import { getRepositoryAnalysis } from "../../services/githubService";
 
-const RepositoryAnalysis = ({ username,onLoaded,refreshKey }) => {
-  
-  const [repositoryStats, setRepositoryStats] = useState(null);
+const RepositoryAnalysis = ({ username, onLoaded, refreshKey }) => {
+  const { updateDashboardData } = useDashboardContext();
 
-    const { updateDashboardData } = useDashboardContext();
+  const [state, setState] = useState({
+    data: null,
+    loading: true,
+    error: null,
+  });
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchRepositoryAnalysis = async () => {
       try {
         console.log("🔄 Refetching RepositoryAnalysis");
+
         const data = await getRepositoryAnalysis(username);
-        console.log("✅ RepositoryAnalysis Loaded");
-        setRepositoryStats(data);
+
+        if (!mounted) return;
+
+        setState({
+          data,
+          loading: false,
+          error: null,
+        });
+
         updateDashboardData("repositoryAnalysis", data);
+
+        console.log("✅ RepositoryAnalysis Loaded");
+
         onLoaded?.();
       } catch (error) {
         console.error("Repository Analysis Error:", error);
+
+        if (!mounted) return;
+
+        setState({
+          data: null,
+          loading: false,
+          error: "Unable to load repository analysis.",
+        });
       }
     };
 
     fetchRepositoryAnalysis();
-  }, [username,refreshKey]);
 
-  if (!repositoryStats) {
-    return <div className="repository-analysis">Loading...</div>;
+    return () => {
+      mounted = false;
+    };
+  }, [username, refreshKey, updateDashboardData, onLoaded]);
+
+  const { data: repositoryStats, loading, error } = state;
+
+  if (loading) {
+    return (
+      <div className="repository-analysis">Loading repository analysis...</div>
+    );
   }
+
+  if (error) {
+    return <div className="repository-analysis">{error}</div>;
+  }
+
+  const topRepo = repositoryStats?.top_repo;
 
   return (
     <div className="repository-analysis">
@@ -44,10 +82,10 @@ const RepositoryAnalysis = ({ username,onLoaded,refreshKey }) => {
           <span>Repositories</span>
         </div>
 
-        <h2>{repositoryStats.total_repos}</h2>
+        <h2>{repositoryStats?.total_repos ?? 0}</h2>
       </div>
 
-      {/* Total Stars */}
+      {/* Stars */}
 
       <div className="repo-analysis-card">
         <div className="repo-analysis-header">
@@ -56,10 +94,10 @@ const RepositoryAnalysis = ({ username,onLoaded,refreshKey }) => {
           <span>Total Stars</span>
         </div>
 
-        <h2>{repositoryStats.total_stars}</h2>
+        <h2>{repositoryStats?.total_stars ?? 0}</h2>
       </div>
 
-      {/* Total Forks */}
+      {/* Forks */}
 
       <div className="repo-analysis-card">
         <div className="repo-analysis-header">
@@ -68,7 +106,7 @@ const RepositoryAnalysis = ({ username,onLoaded,refreshKey }) => {
           <span>Total Forks</span>
         </div>
 
-        <h2>{repositoryStats.total_forks}</h2>
+        <h2>{repositoryStats?.total_forks ?? 0}</h2>
       </div>
 
       {/* Top Repository */}
@@ -92,32 +130,43 @@ const RepositoryAnalysis = ({ username,onLoaded,refreshKey }) => {
           </div>
         </div>
 
-        <a
-          href={repositoryStats.top_repo?.html_url}
-          target="_blank"
-          rel="noreferrer"
-          className="top-repo-link"
-        >
-          <Link2 size={14} color="#94A3B8" />
+        {topRepo ? (
+          <>
+            <a
+              href={topRepo.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="top-repo-link"
+            >
+              <Link2 size={14} color="#94A3B8" />
 
-          <span className="top-repo-name">
-            {repositoryStats.top_repo?.name}
-          </span>
-        </a>
+              <span >{topRepo.name}</span>
+            </a>
 
-        <div className="top-repo-stats">
-          <div className="repo-stat-item">
-            <Star size={14} color="#FACC15" />
+            <div className="top-repo-stats">
+              <div className="repo-stat-item">
+                <Star size={14} color="#FACC15" />
 
-            <span>{repositoryStats.top_repo?.stars}</span>
+                <span>{topRepo.stars ?? 0}</span>
+              </div>
+
+              <div className="repo-stat-item">
+                <GitFork size={14} color="#CBD5E1" />
+
+                <span>{topRepo.forks ?? 0}</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div
+            style={{
+              color: "#94A3B8",
+              marginTop: "12px",
+            }}
+          >
+            No repository found.
           </div>
-
-          <div className="repo-stat-item">
-            <GitFork size={14} color="#CBD5E1" />
-
-            <span>{repositoryStats.top_repo?.forks}</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

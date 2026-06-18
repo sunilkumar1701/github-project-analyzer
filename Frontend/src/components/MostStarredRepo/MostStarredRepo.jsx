@@ -1,38 +1,68 @@
 import "./MostStarredRepo.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import { FaStar, FaCodeBranch } from "react-icons/fa";
+
 import { useDashboardContext } from "../../context/DashboardContext";
 import { getMostStarredRepository } from "../../services/githubService";
 
-const MostStarredRepo = ({ username, onLoaded,refreshKey }) => {
+const MostStarredRepo = ({ username, onLoaded, refreshKey }) => {
   const { updateDashboardData } = useDashboardContext();
+
   const [repo, setRepo] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState(null);
+
+  const fetchRepository = useCallback(
+    async (isMounted) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log("🔄 Refetching MostStarredRepo");
+
+        const data = await getMostStarredRepository(username);
+
+        if (!isMounted.current) return;
+
+        setRepo(data ?? null);
+
+        updateDashboardData("mostStarredRepo", data ?? null);
+
+        console.log("✅ MostStarredRepo Loaded");
+
+        onLoaded?.();
+      } catch (err) {
+        console.error("Most Starred Repo Error:", err);
+
+        if (!isMounted.current) return;
+
+        setError("Failed to load repository.");
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [username, updateDashboardData, onLoaded],
+  );
+
   useEffect(() => {
-    fetchRepository();
-  }, [username,refreshKey]);
+    if (!username) return;
 
-  const fetchRepository = async () => {
-    try {
-      setLoading(true);
-      console.log("🔄 Refetching MostStarredRepo");
+    const isMounted = {
+      current: true,
+    };
 
-      const data = await getMostStarredRepository(username);
+    fetchRepository(isMounted);
 
-      setRepo(data);
-      console.log("✅ MostStarredRepo Loaded");
-      updateDashboardData("mostStarredRepo", data);
-      onLoaded?.();
-    } catch (error) {
-      console.error("Most Starred Repo Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      isMounted.current = false;
+    };
+  }, [username, refreshKey, fetchRepository]);
 
   if (loading) {
     return (
@@ -40,6 +70,16 @@ const MostStarredRepo = ({ username, onLoaded,refreshKey }) => {
         <h3 className="msr-title">Most Starred Repository</h3>
 
         <div className="msr-loading">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="msr-card">
+        <h3 className="msr-title">Most Starred Repository</h3>
+
+        <div className="msr-loading">{error}</div>
       </div>
     );
   }
@@ -60,26 +100,26 @@ const MostStarredRepo = ({ username, onLoaded,refreshKey }) => {
 
       <div className="msr-content">
         <a
-          href={repo.html_url}
+          href={repo?.html_url}
           target="_blank"
           rel="noopener noreferrer"
           className="msr-repo-name"
         >
           <FaCodeBranch className="msr-repo-icon" />
 
-          <span>{repo.name}</span>
+          <span>{repo?.name || "Unknown"}</span>
         </a>
 
         <div className="msr-stars">
           <FaStar className="msr-star-icon" />
 
-          <span>{repo.stars}</span>
+          <span>{repo?.stars ?? 0}</span>
         </div>
 
         <div className="msr-language">
           <span className="msr-dot"></span>
 
-          <span>{repo.language || "Unknown"}</span>
+          <span>{repo?.language || "Unknown"}</span>
         </div>
       </div>
     </div>

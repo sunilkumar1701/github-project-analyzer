@@ -153,6 +153,16 @@
 
   .msr-title {
     font-size: 11px;
+
+    display: block;
+
+    width: 100%;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
   }
 
   .msr-repo-name,

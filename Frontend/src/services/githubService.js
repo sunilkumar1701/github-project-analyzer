@@ -1,141 +1,153 @@
-import axios from "axios";
+import apiClient from "./apiClient";
 
-const API_BASE_URL = "http://localhost:5000/api/github";
+const GITHUB_API = "/github";
+
+const fetchData = async (endpoint) => {
+  try {
+    const response = await apiClient.get(
+      `${GITHUB_API}${endpoint}`,
+    );
+
+    return response.data.data;
+  } catch (error) {
+    throw {
+      status: error.status,
+
+      message:
+        error.message ||
+        "Failed to fetch GitHub data.",
+    };
+  }
+};
 
 export const getGithubUsername = () => {
   return new Promise((resolve) => {
-    chrome.tabs.query(
-      {
-        active: true,
-        currentWindow: true,
-      },
-      (tabs) => {
-        if (!tabs.length) {
-          resolve(null);
-          return;
-        }
+    try {
+      if (
+        typeof chrome === "undefined" ||
+        !chrome.tabs
+      ) {
+        resolve(null);
 
-        const url = tabs[0].url;
-
-        if (!url) {
-          resolve(null);
-          return;
-        }
-
-        const match = url.match(
-          /^https:\/\/github\.com\/([^\/?#]+)/
-        );
-
-        resolve(match ? match[1] : null);
+        return;
       }
-    );
+
+      chrome.tabs.query(
+        {
+          active: true,
+          currentWindow: true,
+        },
+
+        (tabs) => {
+          if (chrome.runtime.lastError) {
+            console.error(
+              "Chrome Runtime Error:",
+              chrome.runtime.lastError.message,
+            );
+
+            resolve(null);
+
+            return;
+          }
+
+          const url = tabs?.[0]?.url;
+
+          if (!url) {
+            resolve(null);
+
+            return;
+          }
+
+          /*
+            Matches:
+            https://github.com/sunilkumar1701
+            https://github.com/sunilkumar1701?tab=repositories
+            https://github.com/sunilkumar1701/
+          */
+
+          const match = url.match(
+            /^https:\/\/github\.com\/([^/?#]+)(?:\/)?(?:\?.*)?$/,
+          );
+
+          resolve(match?.[1] || null);
+        },
+      );
+    } catch (error) {
+      console.error(
+        "Username Detection Error:",
+        error,
+      );
+
+      resolve(null);
+    }
   });
 };
 
-export const getProfile = async (username) => {
-  const response = await axios.get(
-    `${API_BASE_URL}/profile/${username}`
+export const getProfile = (username) =>
+  fetchData(`/profile/${username}`);
+
+export const getProfileAnalysis = (
+  username,
+) => fetchData(`/analysis/${username}`);
+
+export const getRepositoryAnalysis = (
+  username,
+) =>
+  fetchData(
+    `/repository-analysis/${username}`,
   );
 
-  return response.data.data;
-};
-
-export const getProfileAnalysis = async (username) => {
-  const response = await axios.get(
-    `${API_BASE_URL}/analysis/${username}`
+export const getTechnologyStackAnalysis = (
+  username,
+) =>
+  fetchData(
+    `/technology-stack/${username}`,
   );
 
-  return response.data.data;
-};
+export const getActivityAnalysis = (
+  username,
+) =>
+  fetchData(
+    `/activity-analysis/${username}`,
+  );
 
-export const getRepositoryAnalysis =async (username) => {
-    const response = await axios.get(
-      `${API_BASE_URL}/repository-analysis/${username}`
+export const getRepositoryQualityAnalysis = (
+  username,
+) =>
+  fetchData(
+    `/repository-quality/${username}`,
+  );
+
+export const getPortfolioReadinessAnalysis =
+  (username) =>
+    fetchData(
+      `/portfolio-readiness/${username}`,
     );
 
-    return response.data.data;
-  };
+export const getMostStarredRepository = (
+  username,
+) =>
+  fetchData(
+    `/most-starred-repository/${username}`,
+  );
 
-export const getTechnologyStackAnalysis =async (username) => {
+export const getMostForkedRepository = (
+  username,
+) =>
+  fetchData(
+    `/most-forked-repository/${username}`,
+  );
 
-    const response =
-      await axios.get(
-        `${API_BASE_URL}/technology-stack/${username}`
-      );
+export const getActivityStatus = (
+  username,
+) =>
+  fetchData(
+    `/activity-status/${username}`,
+  );
 
-    return response.data.data;
-  };
-
-export const getActivityAnalysis = async (
-  username
-) => {
-
-  const response =
-    await axios.get(
-      `${API_BASE_URL}/activity-analysis/${username}`
-    );
-
-  return response.data.data;
-};
-
-export const getRepositoryQualityAnalysis =async (username) => {
-
-    const response =
-      await axios.get(
-        `${API_BASE_URL}/repository-quality/${username}`
-      );
-
-    return response.data.data;
-  };
-
-  export const getPortfolioReadinessAnalysis =async (username) => {
-
-    const response =
-      await axios.get(
-        `${API_BASE_URL}/portfolio-readiness/${username}`
-      );
-
-    return response.data.data;
-  };
-
-  export const getMostStarredRepository =async (username) => {
-
-    const response =
-      await axios.get(
-        `${API_BASE_URL}/most-starred-repository/${username}`
-      );
-
-    return response.data.data;
-  };
-
-  export const getMostForkedRepository = async (username) => {
-
-  const response =
-    await axios.get(
-      `${API_BASE_URL}/most-forked-repository/${username}`
-    );
-
-  return response.data.data;
-};
-
-export const getActivityStatus = async (
-  username
-) => {
-
-  const response =
-    await axios.get(
-      `${API_BASE_URL}/activity-status/${username}`
-    );
-
-  return response.data.data;
-};
-
-export const getDeveloperScore =
-  async (username) => {
-    const response =
-      await axios.get(
-        `${API_BASE_URL}/developer-score/${username}`
-      );
-
-    return response.data.data;
-  };
+export const getDeveloperScore = (
+  username,
+) =>
+  fetchData(
+    `/developer-score/${username}`,
+  );

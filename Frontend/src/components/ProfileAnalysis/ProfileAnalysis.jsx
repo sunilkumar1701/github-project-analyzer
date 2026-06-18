@@ -1,74 +1,104 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./ProfileAnalysis.css";
 
 import { Users, UserRound, FolderGit2, Clock3, Link2 } from "lucide-react";
+
 import { useDashboardContext } from "../../context/DashboardContext";
 import { getProfileAnalysis } from "../../services/githubService";
 
 const ProfileAnalysis = ({ username, onLoaded, refreshKey }) => {
-  const [analysis, setAnalysis] = useState(null);
   const { updateDashboardData } = useDashboardContext();
 
+  const [state, setState] = useState({
+    analysis: null,
+    loading: true,
+    error: null,
+  });
+
   useEffect(() => {
+    let mounted = true;
+
     const fetchAnalysis = async () => {
       try {
         console.log("🔄 Refetching ProfileAnalysis");
+
         const data = await getProfileAnalysis(username);
-        console.log("✅ ProfileAnalysis Loaded");
-        setAnalysis(data);
+
+        if (!mounted) return;
+
+        setState({
+          analysis: data,
+          loading: false,
+          error: null,
+        });
+
         updateDashboardData("profileAnalysis", data);
+
+        console.log("✅ ProfileAnalysis Loaded");
+
         onLoaded?.();
       } catch (error) {
-        console.error("Error fetching profile analysis:", error);
+        console.error("ProfileAnalysis Error:", error);
+
+        if (!mounted) return;
+
+        setState({
+          analysis: null,
+          loading: false,
+          error: "Unable to load profile analysis.",
+        });
       }
     };
 
     fetchAnalysis();
-  }, [username, refreshKey]);
 
-  const getRelativeTime = (dateString) => {
-    if (!dateString) return "";
+    return () => {
+      mounted = false;
+    };
+  }, [username, refreshKey, updateDashboardData, onLoaded]);
+
+  const { analysis, loading, error } = state;
+
+  const recentRepo = analysis?.recent_repo;
+
+  const relativeTime = useMemo(() => {
+    if (!recentRepo?.updated_at) return "";
 
     const now = new Date();
-    const updated = new Date(dateString);
+
+    const updated = new Date(recentRepo.updated_at);
 
     const seconds = Math.floor((now - updated) / 1000);
 
-    if (seconds < 60) {
-      return `${seconds} sec ago`;
-    }
+    if (seconds < 60) return `${seconds} sec ago`;
 
     const minutes = Math.floor(seconds / 60);
 
-    if (minutes < 60) {
-      return `${minutes} min ago`;
-    }
+    if (minutes < 60) return `${minutes} min ago`;
 
     const hours = Math.floor(minutes / 60);
 
-    if (hours < 24) {
-      return `${hours} hr ago`;
-    }
+    if (hours < 24) return `${hours} hr ago`;
 
     const days = Math.floor(hours / 24);
 
-    if (days < 30) {
-      return `${days} day ago`;
-    }
+    if (days < 30) return `${days} day${days > 1 ? "s" : ""} ago`;
 
     const months = Math.floor(days / 30);
 
-    if (months < 12) {
-      return `${months} month ago`;
-    }
+    if (months < 12) return `${months} month${months > 1 ? "s" : ""} ago`;
 
     const years = Math.floor(months / 12);
 
-    return `${years} year ago`;
-  };
+    return `${years} year${years > 1 ? "s" : ""} ago`;
+  }, [recentRepo?.updated_at]);
 
-  if (!analysis) {
-    return <div className="profile-analysis">Loading...</div>;
+  if (loading) {
+    return <div className="profile-analysis">Loading profile analysis...</div>;
+  }
+
+  if (error) {
+    return <div className="profile-analysis">{error}</div>;
   }
 
   return (
@@ -82,7 +112,7 @@ const ProfileAnalysis = ({ username, onLoaded, refreshKey }) => {
           <span className="analysis-title">Followers</span>
         </div>
 
-        <h2 className="analysis-count">{analysis.followers}</h2>
+        <h2 className="analysis-count">{analysis?.followers ?? 0}</h2>
       </div>
 
       {/* Following */}
@@ -94,13 +124,13 @@ const ProfileAnalysis = ({ username, onLoaded, refreshKey }) => {
           <span className="analysis-title">Following</span>
         </div>
 
-        <h2 className="analysis-count">{analysis.following}</h2>
+        <h2 className="analysis-count">{analysis?.following ?? 0}</h2>
       </div>
 
-      {/* Public Repo + Recent Repo */}
+      {/* Repo Card */}
 
       <div className="analysis-card repo-card">
-        {/* LEFT */}
+        {/* Left */}
 
         <div className="repo-left">
           <div className="analysis-header">
@@ -109,14 +139,12 @@ const ProfileAnalysis = ({ username, onLoaded, refreshKey }) => {
             <span className="analysis-title">Public Repos</span>
           </div>
 
-          <h2 className="analysis-count">{analysis.public_repos}</h2>
+          <h2 className="analysis-count">{analysis?.public_repos ?? 0}</h2>
         </div>
-
-        {/* DIVIDER */}
 
         <div className="repo-divider"></div>
 
-        {/* RIGHT */}
+        {/* Right */}
 
         <div className="repo-right">
           <div className="analysis-header">
@@ -127,20 +155,24 @@ const ProfileAnalysis = ({ username, onLoaded, refreshKey }) => {
             </span>
           </div>
 
-          <a
-            href={analysis.recent_repo?.html_url}
-            target="_blank"
-            rel="noreferrer"
-            className="repo-link"
-          >
-            <Link2 size={14} color="#94A3B8" />
+          {recentRepo ? (
+            <>
+              <a
+                href={recentRepo.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="repo-link"
+              >
+                <Link2 size={14} color="#94A3B8" />
 
-            <span>{analysis.recent_repo?.name}</span>
-          </a>
+                <span>{recentRepo.name}</span>
+              </a>
 
-          <div className="repo-time">
-            Updated {getRelativeTime(analysis.recent_repo?.updated_at)}
-          </div>
+              <div className="repo-time">Updated {relativeTime}</div>
+            </>
+          ) : (
+            <div className="repo-time">No recent repository found.</div>
+          )}
         </div>
       </div>
     </div>

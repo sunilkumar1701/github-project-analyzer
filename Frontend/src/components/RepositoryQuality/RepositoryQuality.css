@@ -253,6 +253,14 @@
   .rq-metrics {
     width: 100%;
   }
+
+  .rq-title {
+    display: block;
+    max-width: calc(100% - 10px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 768px) {

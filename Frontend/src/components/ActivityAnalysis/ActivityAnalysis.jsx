@@ -1,4 +1,5 @@
 import "./ActivityAnalysis.css";
+
 import {
   ResponsiveContainer,
   AreaChart,
@@ -9,9 +10,9 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import { useEffect, useState } from "react";
-import { useDashboardContext } from "../../context/DashboardContext";
+import { useEffect, useState, useCallback, useMemo } from "react";
 
+import { useDashboardContext } from "../../context/DashboardContext";
 import { getActivityAnalysis } from "../../services/githubService";
 
 const labelMap = {
@@ -21,7 +22,7 @@ const labelMap = {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload || !payload.length) {
+  if (!active || !payload?.length) {
     return null;
   }
 
@@ -48,56 +49,93 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const ActivityAnalysis = ({ username, onLoaded, refreshKey }) => {
   const { updateDashboardData } = useDashboardContext();
+
   const [activityData, setActivityData] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchActivityData();
-  }, [username, refreshKey]);
+  const [error, setError] = useState(null);
 
-  const fetchActivityData = async () => {
-    try {
-      setLoading(true);
-      console.log("🔄 Refetching ActivityAnalysis");
+  const fetchActivityData = useCallback(
+    async (isMounted) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const data = await getActivityAnalysis(username);
+        console.log("🔄 Refetching ActivityAnalysis");
 
-      setActivityData(data.activity || []);
-      console.log("✅ ActivityAnalysis Loaded");
-      updateDashboardData("activityAnalysis", data.activity || []);
-      onLoaded?.();
-    } catch (error) {
-      console.error("Activity Analysis Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const data = await getActivityAnalysis(username);
 
-  <div className="activity-card">
-    <div className="activity-title">Activity (Last 12 Months)</div>
+        const activity = Array.isArray(data?.activity) ? data.activity : [];
 
-    <div className="activity-chart">
-      {loading ? (
-        <div className="activity-loading">Loading...</div>
-      ) : (
-        <ResponsiveContainer width="100%" height="100%">
-          {/* AreaChart */}
-        </ResponsiveContainer>
-      )}
-    </div>
-  </div>;
+        if (!isMounted.current) return;
 
-  const maxValue = Math.max(
-    ...activityData.flatMap((item) => [
-      item.commits,
-      item.pullRequests,
-      item.repositoriesCreated,
-    ]),
-    10,
+        setActivityData(activity);
+
+        updateDashboardData("activityAnalysis", activity);
+
+        console.log("✅ ActivityAnalysis Loaded");
+
+        onLoaded?.();
+      } catch (error) {
+        console.error("Activity Analysis Error:", error);
+
+        if (!isMounted.current) return;
+
+        setError("Failed to load activity data.");
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [username, updateDashboardData, onLoaded],
   );
 
-  const roundedMax = Math.ceil(maxValue / 10) * 10;
+  useEffect(() => {
+    const isMounted = {
+      current: true,
+    };
+
+    fetchActivityData(isMounted);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [fetchActivityData, refreshKey]);
+
+  const roundedMax = useMemo(() => {
+    const maxValue = Math.max(
+      ...activityData.flatMap((item) => [
+        item?.commits || 0,
+        item?.pullRequests || 0,
+        item?.repositoriesCreated || 0,
+      ]),
+      10,
+    );
+
+    return Math.ceil(maxValue / 10) * 10;
+  }, [activityData]);
+
+  if (loading) {
+    return (
+      <div className="activity-card">
+        <div className="activity-title">Activity (Last 12 Months)</div>
+
+        <div className="activity-loading">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="activity-card">
+        <div className="activity-title">Activity (Last 12 Months)</div>
+
+        <div className="activity-loading">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="activity-card">

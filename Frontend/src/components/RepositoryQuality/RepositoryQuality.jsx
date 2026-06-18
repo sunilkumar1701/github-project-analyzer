@@ -2,124 +2,152 @@ import "./RepositoryQuality.css";
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+
 import { useDashboardContext } from "../../context/DashboardContext";
 import { getRepositoryQualityAnalysis } from "../../services/githubService";
 
 const RepositoryQuality = ({ username, onLoaded, refreshKey }) => {
-  const [qualityData, setQualityData] = useState(null);
   const { updateDashboardData } = useDashboardContext();
+
+  const [qualityData, setQualityData] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchRepositoryQuality();
-  }, [username, refreshKey]);
+  const [error, setError] = useState(null);
 
-  const fetchRepositoryQuality = async () => {
-    try {
-      setLoading(true);
-      console.log("🔄 Refetching RepositoryQuality");
+  const fetchRepositoryQuality = useCallback(
+    async (isMounted) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const data = await getRepositoryQualityAnalysis(username);
+        console.log("🔄 Refetching RepositoryQuality");
 
-      const metrics = [
-        {
-          name: "README",
-          value: data.metrics.readme,
-          count: data.counts.readme,
-          description:
-            "Checks whether the repository contains a README file with basic project information.",
-        },
+        const data = await getRepositoryQualityAnalysis(username);
 
-        {
-          name: "Description",
-          value: data.metrics.description,
-          count: data.counts.description,
-          description:
-            "Checks whether the repository has a meaningful description in the GitHub About section.",
-        },
+        if (!isMounted.current) return;
 
-        {
-          name: "Documentation",
-          value: data.metrics.documentation,
-          count: data.counts.documentation,
-          description:
-            "Checks whether the README contains more than 100 words and provides meaningful project documentation.",
-        },
+        const score = data?.score ?? 0;
 
-        {
-          name: "Topics",
-          value: data.metrics.topics,
-          count: data.counts.topics,
-          description:
-            "Checks whether the repository uses GitHub Topics for categorization and discoverability.",
-        },
-      ];
-
-      setQualityData({
-        score: data.score,
-
-        totalRepos: data.total_repos,
-
-        label:
-          data.score >= 90
+        const label =
+          score >= 90
             ? "Excellent"
-            : data.score >= 70
+            : score >= 70
               ? "Good"
-              : data.score >= 50
+              : score >= 50
                 ? "Average"
-                : "Poor",
+                : "Poor";
 
-        metrics,
-      });
-      console.log("✅ RepositoryQuality Loaded");
-      updateDashboardData("repositoryQuality", {
-  score: data.score,
+        const metrics = [
+          {
+            name: "README",
+            value: data?.metrics?.readme ?? 0,
+            count: data?.counts?.readme ?? 0,
+            description:
+              "Checks whether the repository contains a README file with basic project information.",
+          },
+          {
+            name: "Description",
+            value: data?.metrics?.description ?? 0,
+            count: data?.counts?.description ?? 0,
+            description:
+              "Checks whether the repository has a meaningful description in the GitHub About section.",
+          },
+          {
+            name: "Documentation",
+            value: data?.metrics?.documentation ?? 0,
+            count: data?.counts?.documentation ?? 0,
+            description:
+              "Checks whether the README contains more than 100 words and provides meaningful project documentation.",
+          },
+          {
+            name: "Topics",
+            value: data?.metrics?.topics ?? 0,
+            count: data?.counts?.topics ?? 0,
+            description:
+              "Checks whether the repository uses GitHub Topics for categorization and discoverability.",
+          },
+        ];
 
-  totalRepos: data.total_repos,
+        const formattedData = {
+          score,
+          totalRepos: data?.total_repos ?? 0,
+          label,
+          metrics,
+        };
 
-  label:
-    data.score >= 90
-      ? "Excellent"
-      : data.score >= 70
-      ? "Good"
-      : data.score >= 50
-      ? "Average"
-      : "Poor",
+        setQualityData(formattedData);
 
-  metrics: [
-    {
-      name: "README",
-      score: data.metrics.readme,
-      count: data.counts.readme,
+        updateDashboardData("repositoryQuality", {
+          score,
+          totalRepos: data?.total_repos ?? 0,
+          label,
+          metrics: metrics.map(({ name, value, count }) => ({
+            name,
+            score: value,
+            count,
+          })),
+        });
+
+        console.log("✅ RepositoryQuality Loaded");
+
+        onLoaded?.();
+      } catch (err) {
+        console.error("Repository Quality Error:", err);
+
+        if (!isMounted.current) return;
+
+        setError("Failed to load repository quality.");
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
+      }
     },
-    {
-      name: "Description",
-      score: data.metrics.description,
-      count: data.counts.description,
-    },
-    {
-      name: "Documentation",
-      score: data.metrics.documentation,
-      count: data.counts.documentation,
-    },
-    {
-      name: "Topics",
-      score: data.metrics.topics,
-      count: data.counts.topics,
-    },
-  ],
-});
-      onLoaded?.();
-    } catch (error) {
-      console.error("Repository Quality Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    [username, updateDashboardData, onLoaded],
+  );
 
-  if (loading || !qualityData) {
+  useEffect(() => {
+    const isMounted = {
+      current: true,
+    };
+
+    fetchRepositoryQuality(isMounted);
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [fetchRepositoryQuality, refreshKey]);
+
+  const scoreColor = useMemo(() => {
+    if (!qualityData) return "#ef4444";
+
+    if (qualityData.score >= 90) return "#22c55e";
+
+    if (qualityData.score >= 70) return "#3b82f6";
+
+    if (qualityData.score >= 50) return "#f59e0b";
+
+    return "#ef4444";
+  }, [qualityData]);
+
+  const chartData = useMemo(() => {
+    if (!qualityData) return [];
+
+    return [
+      {
+        name: "completed",
+        value: qualityData.score,
+      },
+      {
+        name: "remaining",
+        value: 100 - qualityData.score,
+      },
+    ];
+  }, [qualityData]);
+
+  if (loading) {
     return (
       <div className="rq-card">
         <h3 className="rq-title">Repository Quality</h3>
@@ -138,24 +166,30 @@ const RepositoryQuality = ({ username, onLoaded, refreshKey }) => {
       </div>
     );
   }
-  const scoreColor =
-    qualityData.score >= 90
-      ? "#22c55e" // green
-      : qualityData.score >= 70
-        ? "#3b82f6" // blue
-        : qualityData.score >= 50
-          ? "#f59e0b" // orange
-          : "#ef4444"; // red
-  const chartData = [
-    {
-      name: "completed",
-      value: qualityData.score,
-    },
-    {
-      name: "remaining",
-      value: 100 - qualityData.score,
-    },
-  ];
+
+  if (error) {
+    return (
+      <div className="rq-card">
+        <h3 className="rq-title">Repository Quality</h3>
+
+        <div
+          style={{
+            height: "80px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#ef4444",
+          }}
+        >
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!qualityData) {
+    return null;
+  }
 
   return (
     <div className="rq-card">

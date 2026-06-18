@@ -1,5 +1,11 @@
 import "./App.css";
-import { useEffect, useState, useRef } from "react";
+
+import {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 
 import { getGithubUsername } from "./services/githubService";
 
@@ -17,69 +23,83 @@ import ActionButtons from "./components/ActionButtons/ActionButtons";
 
 import { useDashboardContext } from "./context/DashboardContext";
 
-
-
 function App() {
-
   const { dashboardData } = useDashboardContext();
-  const [username, setUsername] = useState(null);
-
-  const [isLoading, setIsLoading] = useState(true);
 
   const dashboardRef = useRef(null);
-
-  /* ==========================
-     MODULE LOADING TRACKER
-  ========================== */
+  const mountedRef = useRef(true);
 
   const TOTAL_MODULES = 10;
 
+  const [username, setUsername] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [loadedModules, setLoadedModules] = useState(0);
-
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleModuleLoaded = () => {
-    setLoadedModules((prev) => prev + 1);
-  };
-  const handleReanalyze = () => {
-    console.clear();
+  const handleModuleLoaded = useCallback(() => {
+    setLoadedModules((prev) =>
+      prev < TOTAL_MODULES ? prev + 1 : prev
+    );
+  }, []);
 
-    console.log("=================================");
-
-    console.log("🔄 REANALYZE BUTTON CLICKED");
-
-    console.log("=================================");
+  const handleReanalyze = useCallback(() => {
+    console.log("🔄 Reanalyzing dashboard");
 
     setLoadedModules(0);
 
     setRefreshKey((prev) => prev + 1);
-  };
+  }, []);
 
-  const isDashboardLoading = loadedModules < TOTAL_MODULES;
-
-  /* ==========================
-     LOAD USERNAME
-  ========================== */
+  const isDashboardLoading =
+    loadedModules < TOTAL_MODULES;
 
   useEffect(() => {
+    mountedRef.current = true;
+
     const loadUsername = async () => {
       try {
+        setIsLoading(true);
+
         const githubUsername = await getGithubUsername();
 
-        console.log("Detected GitHub Username:", githubUsername);
+        if (!mountedRef.current) return;
+
+        if (!githubUsername) {
+          throw new Error(
+            "Unable to detect GitHub username."
+          );
+        }
+
+        console.log(
+          "Detected GitHub Username:",
+          githubUsername
+        );
 
         setUsername(githubUsername);
       } catch (error) {
-        console.error("Username Detection Error:", error);
+        console.error(
+          "Username Detection Error:",
+          error
+        );
+
+        if (mountedRef.current) {
+          setUsername(null);
+        }
       } finally {
-        setIsLoading(false);
+        if (mountedRef.current) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadUsername();
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
-  if (!username) {
+  if (isLoading) {
     return (
       <div
         className="dashboard"
@@ -92,6 +112,23 @@ function App() {
         }}
       >
         Loading GitHub User...
+      </div>
+    );
+  }
+
+  if (!username) {
+    return (
+      <div
+        className="dashboard"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          color: "#ef4444",
+        }}
+      >
+        Failed to detect GitHub username.
       </div>
     );
   }

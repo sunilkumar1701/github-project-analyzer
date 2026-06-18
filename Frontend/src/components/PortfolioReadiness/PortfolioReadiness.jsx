@@ -2,76 +2,107 @@ import "./PortfolioReadiness.css";
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+
 import { useDashboardContext } from "../../context/DashboardContext";
 import { getPortfolioReadinessAnalysis } from "../../services/githubService";
 
 const PortfolioReadiness = ({ username, onLoaded, refreshKey }) => {
   const { updateDashboardData } = useDashboardContext();
+
   const [data, setData] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (username) {
-      fetchPortfolioReadiness();
-    }
-  }, [username, refreshKey]);
+  const [error, setError] = useState(null);
 
- const fetchPortfolioReadiness = async () => {
-  try {
-    setLoading(true);
+  const fetchPortfolioReadiness = useCallback(
+    async (isMounted) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    console.log(
-      "🔄 Refetching PortfolioReadiness"
-    );
+        console.log("🔄 Refetching PortfolioReadiness");
 
-    const response =
-      await getPortfolioReadinessAnalysis(
-        username
-      );
+        const response = await getPortfolioReadinessAnalysis(username);
 
-    console.log(response);
+        if (!isMounted.current) return;
 
-    setData(response);
+        const formattedData = {
+          score: response?.score ?? 0,
 
-    updateDashboardData(
-      "portfolioReadiness",
-      {
-        score: response.score,
+          completed: response?.completed ?? 0,
 
-        completed:
-          response.completed,
+          total: response?.total ?? 0,
 
-        total:
-          response.total,
+          checks: response?.checks ?? [],
+        };
 
-        checks:
-          response.checks,
+        setData(formattedData);
+
+        updateDashboardData("portfolioReadiness", formattedData);
+
+        console.log("✅ PortfolioReadiness Loaded");
+
+        onLoaded?.();
+      } catch (err) {
+        console.error("Portfolio Readiness Error:", err);
+
+        if (!isMounted.current) return;
+
+        setError("Failed to load portfolio readiness.");
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
-    );
+    },
+    [username, updateDashboardData, onLoaded],
+  );
 
-    console.log(
-      "✅ PortfolioReadiness Loaded"
-    );
+  useEffect(() => {
+    if (!username) return;
 
-    onLoaded?.();
+    const isMounted = {
+      current: true,
+    };
 
-  } catch (error) {
+    fetchPortfolioReadiness(isMounted);
 
-    console.error(
-      "Portfolio Readiness Error:",
-      error
-    );
+    return () => {
+      isMounted.current = false;
+    };
+  }, [username, refreshKey, fetchPortfolioReadiness]);
 
-  } finally {
+  const score = data?.score ?? 0;
 
-    setLoading(false);
+  const checks = data?.checks ?? [];
 
-  }
-};
+  const chartData = useMemo(
+    () => [
+      {
+        name: "completed",
+        value: score,
+      },
+      {
+        name: "remaining",
+        value: 100 - score,
+      },
+    ],
+    [score],
+  );
 
-  if (loading || !data) {
+  const label = useMemo(() => {
+    if (score >= 90) return "Excellent";
+
+    if (score >= 70) return "Good";
+
+    if (score >= 50) return "Average";
+
+    return "Poor";
+  }, [score]);
+
+  if (loading) {
     return (
       <div className="pr-card">
         <h3 className="pr-title">Portfolio Readiness</h3>
@@ -91,29 +122,29 @@ const PortfolioReadiness = ({ username, onLoaded, refreshKey }) => {
     );
   }
 
-  const score = data.score;
+  if (error) {
+    return (
+      <div className="pr-card">
+        <h3 className="pr-title">Portfolio Readiness</h3>
 
-  const checks = data.checks;
+        <div
+          style={{
+            height: "80px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#ef4444",
+          }}
+        >
+          {error}
+        </div>
+      </div>
+    );
+  }
 
-  const chartData = [
-    {
-      name: "completed",
-      value: score,
-    },
-    {
-      name: "remaining",
-      value: 100 - score,
-    },
-  ];
-
-  const label =
-    score >= 90
-      ? "Excellent"
-      : score >= 70
-        ? "Good"
-        : score >= 50
-          ? "Average"
-          : "Poor";
+  if (!data) {
+    return null;
+  }
 
   return (
     <div className="pr-card">

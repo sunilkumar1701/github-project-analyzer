@@ -1,48 +1,82 @@
 import "./ActivityStatus.css";
 
 import { Activity } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
 
-import { useEffect, useState } from "react";
 import { useDashboardContext } from "../../context/DashboardContext";
-
 import { getActivityStatus } from "../../services/githubService";
 
-const ActivityStatus = ({ username,onLoaded,refreshKey }) => {
+const ActivityStatus = ({ username, onLoaded, refreshKey }) => {
   const { updateDashboardData } = useDashboardContext();
+
   const [activityData, setActivityData] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState(null);
+
+  const fetchActivityStatus = useCallback(
+    async (isMounted) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log("🔄 Refetching ActivityStatus");
+
+        const data = await getActivityStatus(username);
+
+        if (!isMounted.current) return;
+
+        setActivityData(data ?? null);
+
+        updateDashboardData("activityStatus", data ?? null);
+
+        console.log("✅ ActivityStatus Loaded");
+
+        onLoaded?.();
+      } catch (err) {
+        console.error("Activity Status Error:", err);
+
+        if (!isMounted.current) return;
+
+        setError("Failed to load activity status.");
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [username, updateDashboardData, onLoaded],
+  );
+
   useEffect(() => {
-    fetchActivityStatus();
-  }, [username,refreshKey]);
+    if (!username) return;
 
-  const fetchActivityStatus = async () => {
-    try {
-      setLoading(true);
-      console.log("🔄 Refetching ActivityStatus");
+    const isMounted = {
+      current: true,
+    };
 
-      const data = await getActivityStatus(username);
+    fetchActivityStatus(isMounted);
 
-      setActivityData(data);
-      console.log("✅ ActivityStatus Loaded");
-      updateDashboardData("activityStatus", data);
-      onLoaded?.();
-    } catch (error) {
-      console.error("Activity Status Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      isMounted.current = false;
+    };
+  }, [username, refreshKey, fetchActivityStatus]);
 
   const formatLastActive = (dateString) => {
-    if (!dateString) return "Unknown";
-
-    const now = new Date();
+    if (!dateString) {
+      return "Unknown";
+    }
 
     const lastDate = new Date(dateString);
 
-    const diffMs = now - lastDate;
+    if (Number.isNaN(lastDate.getTime())) {
+      return "Unknown";
+    }
+
+    const now = new Date();
+
+    const diffMs = now.getTime() - lastDate.getTime();
 
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
@@ -53,10 +87,10 @@ const ActivityStatus = ({ username,onLoaded,refreshKey }) => {
     }
 
     if (diffHours < 24) {
-      return `${diffHours} hours ago`;
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
     }
 
-    return `${diffDays} days ago`;
+    return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
   };
 
   const getStatusClass = () => {
@@ -85,6 +119,16 @@ const ActivityStatus = ({ username,onLoaded,refreshKey }) => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="status-card">
+        <h3 className="status-title">Activity Status</h3>
+
+        <div className="status-loading">{error}</div>
+      </div>
+    );
+  }
+
   if (!activityData) {
     return (
       <div className="status-card">
@@ -105,11 +149,11 @@ const ActivityStatus = ({ username,onLoaded,refreshKey }) => {
         </div>
 
         <span className={`status-text ${getStatusClass()}`}>
-          {activityData.status}
+          {activityData?.status || "Inactive"}
         </span>
 
         <span className="status-last-active">
-          {formatLastActive(activityData.lastActive)}
+          {formatLastActive(activityData?.lastActive)}
         </span>
       </div>
 
@@ -120,7 +164,9 @@ const ActivityStatus = ({ username,onLoaded,refreshKey }) => {
 
         <span className="status-fire">🔥</span>
 
-        <span className="status-streak-value">{activityData.streak} days</span>
+        <span className="status-streak-value">
+          {activityData?.streak ?? 0} days
+        </span>
       </div>
     </div>
   );

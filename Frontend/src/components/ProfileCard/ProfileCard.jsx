@@ -1,16 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./ProfileCard.css";
 import { getProfile, getDeveloperScore } from "../../services/githubService";
 import { useDashboardContext } from "../../context/DashboardContext";
 
 const ProfileCard = ({ username, onLoaded, refreshKey }) => {
-  const [profile, setProfile] = useState(null);
-
-  const [developerScore, setDeveloperScore] = useState(null);
-
   const { updateDashboardData } = useDashboardContext();
 
+  const [state, setState] = useState({
+    profile: null,
+    developerScore: null,
+    loading: true,
+    error: null,
+  });
+
   useEffect(() => {
+    let mounted = true;
+
     const fetchProfile = async () => {
       try {
         console.log("🔄 Refetching ProfileCard");
@@ -20,9 +25,14 @@ const ProfileCard = ({ username, onLoaded, refreshKey }) => {
           getDeveloperScore(username),
         ]);
 
-        setProfile(profileData);
+        if (!mounted) return;
 
-        setDeveloperScore(scoreData);
+        setState({
+          profile: profileData,
+          developerScore: scoreData,
+          loading: false,
+          error: null,
+        });
 
         updateDashboardData("developerScore", scoreData);
 
@@ -33,32 +43,54 @@ const ProfileCard = ({ username, onLoaded, refreshKey }) => {
         onLoaded?.();
       } catch (error) {
         console.error("ProfileCard Error:", error);
+
+        if (!mounted) return;
+
+        setState({
+          profile: null,
+          developerScore: null,
+          loading: false,
+          error: "Unable to load profile.",
+        });
       }
     };
 
     fetchProfile();
-  }, [username, refreshKey]);
 
-  if (!profile) {
-    return <div className="module-card profile-card">Loading Profile...</div>;
-  }
+    return () => {
+      mounted = false;
+    };
+  }, [username, refreshKey, updateDashboardData, onLoaded]);
 
-  const getWebsiteLabel = (url) => {
-    if (!url) return "";
-
-    try {
-      const hostname = new URL(url.startsWith("http") ? url : `https://${url}`)
-        .hostname;
-
-      return hostname.replace("www.", "");
-    } catch {
-      return url;
-    }
-  };
+  const { profile, developerScore, loading, error } = state;
 
   const score = developerScore?.score || 0;
 
   const dashOffset = 220 - (220 * score) / 100;
+
+  const websiteLabel = useMemo(() => {
+    if (!profile?.blog) return "";
+
+    try {
+      const hostname = new URL(
+        profile.blog.startsWith("http")
+          ? profile.blog
+          : `https://${profile.blog}`,
+      ).hostname;
+
+      return hostname.replace("www.", "");
+    } catch {
+      return profile.blog;
+    }
+  }, [profile?.blog]);
+
+  if (loading) {
+    return <div className="module-card profile-card">Loading Profile...</div>;
+  }
+
+  if (error) {
+    return <div className="module-card profile-card">{error}</div>;
+  }
 
   return (
     <div className="module-card profile-card">
@@ -69,6 +101,11 @@ const ProfileCard = ({ username, onLoaded, refreshKey }) => {
           src={profile.avatar_url}
           alt={profile.name}
           className="profile-avatar"
+          loading="lazy"
+          onError={(e) => {
+            e.target.src =
+              "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png";
+          }}
         />
 
         <div className="profile-details">
@@ -99,7 +136,7 @@ const ProfileCard = ({ username, onLoaded, refreshKey }) => {
                     : `https://${profile.blog}`
                 }
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="meta-item website-link"
               >
                 <svg
@@ -111,7 +148,7 @@ const ProfileCard = ({ username, onLoaded, refreshKey }) => {
                   <path d="M8.225 12.725a3.25 3.25 0 0 1-4.596-4.596l1.944-1.944a3.25 3.25 0 0 1 4.596 0 .75.75 0 0 1-1.06 1.06 1.75 1.75 0 0 0-2.475 0L4.69 9.19a1.75 1.75 0 1 0 2.475 2.475l1.06-1.06a.75.75 0 1 1 1.06 1.06l-1.06 1.06Z" />
                 </svg>
 
-                <span>{getWebsiteLabel(profile.blog)}</span>
+                <span>{websiteLabel}</span>
               </a>
             )}
           </div>

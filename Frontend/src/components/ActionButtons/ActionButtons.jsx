@@ -3,7 +3,7 @@ import "./ActionButtons.css";
 import { RefreshCw, Download } from "lucide-react";
 import chatbotIcon from "../../assets/Chatbot.png";
 
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -21,15 +21,34 @@ const ActionButtons = ({
 
   const [showChatbot, setShowChatbot] = useState(false);
 
-  const handleDownload = async () => {
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const handleChatbot = useCallback(() => {
+    setShowChatbot((prev) => !prev);
+  }, []);
+
+  const handleDownload = useCallback(async () => {
+    if (isDownloading) return;
+
+    const dashboard = dashboardRef?.current;
+
+    if (!dashboard) {
+      console.error("Dashboard not found");
+      return;
+    }
+
+    let originalWidth = "";
+
     try {
       setIsDownloading(true);
 
-      const dashboard = dashboardRef?.current;
-
-      if (!dashboard) return;
-
-      const originalWidth = dashboard.style.width;
+      originalWidth = dashboard.style.width;
 
       dashboard.style.width = "720px";
 
@@ -39,6 +58,7 @@ const ActionButtons = ({
         backgroundColor: "#08111f",
         width: 720,
         windowWidth: 720,
+        logging: false,
       });
 
       dashboard.style.width = originalWidth;
@@ -54,6 +74,8 @@ const ActionButtons = ({
       const margin = 8;
 
       const usableWidth = pdfWidth - margin * 2;
+
+      /* Header */
 
       pdf.setFont("helvetica", "bold");
 
@@ -72,7 +94,7 @@ const ActionButtons = ({
       pdf.setTextColor(120, 120, 120);
 
       pdf.text(
-        `Generated on ${new Date().toLocaleDateString()}`,
+        `Generated on ${new Date().toLocaleString()}`,
         pdfWidth / 2,
         25,
         {
@@ -102,6 +124,8 @@ const ActionButtons = ({
         heightLeft -= pdfHeight;
       }
 
+      /* Footer */
+
       const totalPages = pdf.internal.getNumberOfPages();
 
       for (let i = 1; i <= totalPages; i++) {
@@ -116,23 +140,28 @@ const ActionButtons = ({
         });
       }
 
-      pdf.save("github-analysis.pdf");
+      pdf.save(`${username || "github-user"}-analysis.pdf`);
     } catch (error) {
       console.error("PDF Download Error:", error);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
 
-  const handleChatbot = () => {
-    setShowChatbot((prev) => !prev);
-  };
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      if (dashboard) {
+        dashboard.style.width = originalWidth;
+      }
+
+      if (isMountedRef.current) {
+        setIsDownloading(false);
+      }
+    }
+  }, [dashboardRef, isDownloading, username]);
 
   return (
     <>
       <div
         className={`action-buttons-card ${isLoading ? "buttons-disabled" : ""}`}
       >
+        {/* Reanalyze */}
         <button
           className="reanalyze-btn"
           disabled={isLoading}
@@ -147,6 +176,7 @@ const ActionButtons = ({
           </span>
         </button>
 
+        {/* Download */}
         <button
           className="icon-btn"
           disabled={isLoading || isDownloading}
@@ -156,6 +186,7 @@ const ActionButtons = ({
           <Download size={20} className={isDownloading ? "spin-icon" : ""} />
         </button>
 
+        {/* Chatbot */}
         <button
           className="icon-btn chatbot-btn"
           disabled={isLoading}
