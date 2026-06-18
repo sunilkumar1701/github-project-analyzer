@@ -30,10 +30,11 @@ app.use(
   }),
 );
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "GitHub Talent Analyzer Backend Running 🚀",
+    message: "API is running 🚀",
+    status: "healthy",
   });
 });
 
