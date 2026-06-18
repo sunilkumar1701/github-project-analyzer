@@ -1,36 +1,40 @@
 const { determineSource } = require("../utils/toolRouter");
 const { processQuestion } = require("../services/chat.service");
 
-const chatWithGithub = async (req, res) => {
-  try {
-    const { username, message, dashboardContext } = req.body;
-    
+const asyncHandler = require("../middleware/asyncHandler");
 
-    const source = determineSource(message);
+const chatWithGithub = asyncHandler(async (req, res) => {
+  const {
+    username,
+    message,
+    dashboardContext,
+  } = req.body;
 
-    const result = await processQuestion({
-      username,
-      source,
-      dashboardContext,
-      question: message,
+  /*
+   * Basic Validation
+   */
+  if (!username || !message) {
+    return res.status(400).json({
+      success: false,
+      answer: "Username and message are required.",
     });
-
-    return res.status(200).json({
-      success: true,
-      source: result.source,
-      answer: result.answer,
-    });
-  } catch (error) {
-    console.error(error);
-
-     return res.status(500).json({
-    success: false,
-    answer:
-      error.message ||
-      "Something went wrong.",
-  });
   }
-};
+
+  const source = determineSource(message);
+
+  const result = await processQuestion({
+    username,
+    source,
+    dashboardContext,
+    question: message,
+  });
+
+  return res.status(200).json({
+    success: true,
+    source: result.source,
+    answer: result.answer,
+  });
+});
 
 module.exports = {
   chatWithGithub,

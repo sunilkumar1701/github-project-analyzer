@@ -1,30 +1,27 @@
-const githubService = require(
-  "../services/github.service"
-);
+const githubService = require("../services/github.service");
 
-const getDeveloperScore =
-  async (req, res) => {
-    try {
-      const { username } =
-        req.params;
+const asyncHandler = require("../middleware/asyncHandler");
 
-      const data =
-        await githubService.getDeveloperScore(
-          username
-        );
+const getDeveloperScore = asyncHandler(async (req, res) => {
+  const { username } = req.params;
 
-      res.status(200).json({
-        success: true,
-        data,
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message:
-          error.message,
-      });
-    }
-  };
+  /*
+   * Validation
+   */
+  if (!username?.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: "Username is required.",
+    });
+  }
+
+  const data = await githubService.getDeveloperScore(username);
+
+  return res.status(200).json({
+    success: true,
+    data,
+  });
+});
 
 module.exports = {
   getDeveloperScore,

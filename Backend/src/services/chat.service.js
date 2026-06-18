@@ -9,56 +9,117 @@ const processQuestion = async ({
   dashboardContext,
   question,
 }) => {
-  console.log("QUESTION:", question);
-  console.log("USERNAME:", username);
-  console.log("SOURCE:", source);
 
-  console.log(
-    source === "dashboard" ? "USING DASHBOARD CONTEXT" : "USING GITHUB MCP",
-  );
 
-  /*
-   * DASHBOARD
-   */
-  if (source === "dashboard") {
-    const answer = await generateAnswer({
-      question,
-      data: dashboardContext,
-    });
+  console.log("\n========== AI ROUTER ==========\n");
 
-    return {
-      source: "dashboard",
-      answer,
-    };
-  }
+console.log("Question :", question);
+console.log("Username :", username);
 
-  /*
-   * MCP
-   */
+if (source === "dashboard") {
+  console.log("Source   : DASHBOARD CONTEXT");
+} else {
+  console.log("Source   : MCP");
+}
 
+console.log("\n===============================\n");
   try {
-    const toolConfig = await selectToolWithGemini(question, username);
+    if (!question?.trim()) {
+      throw new Error("Question is required.");
+    }
 
-    const mcpResult = await executeMcpTool(toolConfig.tool, toolConfig.args);
+    /*
+     * DASHBOARD CONTEXT
+     */
+    if (source === "dashboard") {
+      const answer = await generateAnswer({
+        question,
+        data: dashboardContext || {},
+      });
 
-    const answer = await generateAnswer({
-      question,
-      data: mcpResult,
-    });
+      return {
+        source: "dashboard",
+        answer,
+      };
+    }
 
-    return {
-      source: "mcp",
-      answer,
-    };
+    /*
+     * MCP FLOW
+     */
+
+    let toolConfig;
+
+    try {
+      toolConfig = await selectToolWithGemini(question, username);
+      console.log("\n========== MCP TOOL ==========\n");
+
+console.log("Tool :", toolConfig.tool);
+
+console.log(
+  "Args :",
+  JSON.stringify(toolConfig.args, null, 2)
+);
+
+console.log("\n==============================\n");
+    } catch (error) {
+      const answer = await generateErrorAnswer({
+        question,
+        error:
+          error.message ||
+          "Unable to determine which tool should handle this request.",
+      });
+
+      return {
+        source: "mcp",
+        answer,
+      };
+    }
+
+    if (!toolConfig?.tool) {
+      const answer = await generateErrorAnswer({
+        question,
+        error: "No suitable tool was found for this request.",
+      });
+
+      return {
+        source: "mcp",
+        answer,
+      };
+    }
+
+    try {
+      const mcpResult = await executeMcpTool(
+        toolConfig.tool,
+        toolConfig.args || {},
+      );
+
+      const answer = await generateAnswer({
+        question,
+        data: mcpResult,
+      });
+
+      return {
+        source: "mcp",
+        answer,
+      };
+    } catch (error) {
+      const answer = await generateErrorAnswer({
+        question,
+        error:
+          error.message ||
+          "Unable to process the request with the selected tool.",
+      });
+
+      return {
+        source: "mcp",
+        answer,
+      };
+    }
   } catch (error) {
-    const answer = await generateErrorAnswer({
-      question,
-      error: error.message,
-    });
-
     return {
-      source: "mcp",
-      answer,
+      source: source || "unknown",
+      answer:
+        error.message || "Something went wrong while processing your request.",
     };
   }
 };

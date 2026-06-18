@@ -1,9 +1,4 @@
-const express = require(
-  "express"
-);
-
-const router =
-  express.Router();
+const express = require("express");
 
 const {
   getProfile,
@@ -15,59 +10,29 @@ const {
   getPortfolioReadinessAnalysis,
   getMostStarredRepository,
   getMostForkedRepository,
-  getActivityStatus
+  getActivityStatus,
 } = require("../controllers/github.controller");
 
-router.get(
-  "/profile/:username",
-  getProfile
-);
+const router = express.Router();
 
-router.get(
-  "/analysis/:username",
-  getProfileAnalysis
-);
+router.get("/profile/:username", getProfile);
 
-router.get(
-  "/repository-analysis/:username",
-  getRepositoryAnalysis
-);
+router.get("/analysis/:username", getProfileAnalysis);
 
-router.get(
-  "/technology-stack/:username",
-  getTechnologyStackAnalysis
-);
+router.get("/repository-analysis/:username", getRepositoryAnalysis);
 
-router.get(
-  "/activity-analysis/:username",
-  getActivityAnalysis
-);
+router.get("/technology-stack/:username", getTechnologyStackAnalysis);
 
+router.get("/activity-analysis/:username", getActivityAnalysis);
 
-router.get(
-  "/repository-quality/:username",
-  getRepositoryQualityAnalysis
-);
-router.get(
-  "/portfolio-readiness/:username",
-  getPortfolioReadinessAnalysis
-);
+router.get("/repository-quality/:username", getRepositoryQualityAnalysis);
 
-router.get(
-  "/most-starred-repository/:username",
-  getMostStarredRepository
-);
+router.get("/portfolio-readiness/:username", getPortfolioReadinessAnalysis);
 
-router.get(
-  "/most-forked-repository/:username",
-  getMostForkedRepository
-);
+router.get("/most-starred-repository/:username", getMostStarredRepository);
 
-router.get(
-  "/activity-status/:username",
-  getActivityStatus
-);
+router.get("/most-forked-repository/:username", getMostForkedRepository);
 
-
+router.get("/activity-status/:username", getActivityStatus);
 
 module.exports = router;

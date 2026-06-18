@@ -1,13 +1,21 @@
 const ai = require("../config/gemini");
-
 const { getToolsCache } = require("../mcp/mcpToolsCache");
 
+const MODEL_NAME = "gemini-2.5-flash";
+
 const selectToolWithGemini = async (question, username) => {
+  try {
+    if (!question?.trim()) {
+      throw new Error("Question is required.");
+    }
 
+    const availableTools = getToolsCache();
 
-  const availableTools = getToolsCache();
+    if (!Array.isArray(availableTools) || availableTools.length === 0) {
+      throw new Error("No MCP tools are available.");
+    }
 
- const prompt = `
+     const prompt = `
 You are an expert GitHub MCP Tool Router.
 
 Available Tools:
@@ -139,49 +147,73 @@ User Question:
 ${question}
 `;
 
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt,
+    });
 
+    const rawText = response?.text || "";
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-  });
+    const text = rawText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
-  const text = response.text
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
-
-  let toolConfig;
-
-  try {
-    toolConfig = JSON.parse(text);
-  } catch (error) {
-    throw new Error(`Invalid JSON returned by Gemini:\n${text}`);
-  }
-
-  // Validate tool exists
-  const selectedTool = availableTools.find(
-    (tool) => tool.name === toolConfig.tool,
-  );
-
-  if (!selectedTool) {
-    throw new Error("Invalid tool selected");
-  }
-
-  // Validate required args
-  const requiredFields = selectedTool.inputSchema?.required || [];
-
-  for (const field of requiredFields) {
-    if (toolConfig.args[field] === undefined) {
-      throw new Error(`Missing required field: ${field}`);
+    if (!text) {
+      throw new Error("Gemini returned an empty response.");
     }
+
+    let toolConfig;
+
+    try {
+      toolConfig = JSON.parse(text);
+    } catch {
+      throw new Error("Gemini returned invalid JSON.");
+    }
+
+    if (!toolConfig || typeof toolConfig !== "object") {
+      throw new Error("Invalid tool configuration.");
+    }
+
+    if (!toolConfig.tool) {
+      throw new Error("No tool selected.");
+    }
+
+    if (!toolConfig.args || typeof toolConfig.args !== "object") {
+      toolConfig.args = {};
+    }
+
+    /*
+     * Validate tool exists
+     */
+    const selectedTool = availableTools.find(
+      (tool) => tool.name === toolConfig.tool,
+    );
+
+    if (!selectedTool) {
+      throw new Error(`Tool "${toolConfig.tool}" does not exist.`);
+    }
+
+    /*
+     * Validate required args
+     */
+    const requiredFields = selectedTool.inputSchema?.required || [];
+
+    for (const field of requiredFields) {
+      if (
+        toolConfig.args[field] === undefined ||
+        toolConfig.args[field] === null
+      ) {
+        throw new Error(`Missing required field: ${field}`);
+      }
+    }
+
+    return toolConfig;
+  } catch (error) {
+    console.error("Tool Selection Error:", error.message);
+
+    throw error;
   }
-
-  console.log("\n========== TOOL SELECTED ==========\n");
-  console.log(toolConfig);
-  console.log("\n===================================\n");
-
-  return toolConfig;
 };
 
 module.exports = {

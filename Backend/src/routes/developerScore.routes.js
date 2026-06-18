@@ -1,18 +1,11 @@
-const express =
-  require("express");
+const express = require("express");
 
 const {
   getDeveloperScore,
-} = require(
-  "../controllers/developerScore.controller"
-);
+} = require("../controllers/developerScore.controller");
 
-const router =
-  express.Router();
+const router = express.Router();
 
-router.get(
-  "/:username",
-  getDeveloperScore
-);
+router.get("/:username", getDeveloperScore);
 
 module.exports = router;

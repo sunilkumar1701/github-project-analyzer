@@ -1,30 +1,28 @@
 const ai = require("../config/gemini");
 
-const generateErrorAnswer = async ({
-  question,
-  error,
-}) => {
+const MODEL_NAME = "gemini-2.5-flash";
 
-  const prompt = `
+const generateErrorAnswer = async ({ question, error }) => {
+  try {
+    const prompt = `
 You are a professional GitHub AI Assistant.
 
-User asked:
+User Question:
 "${question}"
 
-Internal error:
+Problem:
 "${error}"
 
 Instructions:
 
-1. Explain the problem in simple language.
-2. Never mention internal errors.
-3. Never mention JSON parsing.
-4. Never mention Gemini.
-5. Never mention tools unless necessary.
-6. Be polite and professional.
-7. Suggest what the assistant CAN do.
-8. Return markdown.
-9. Return ONLY the final answer.
+1. Explain the issue in simple language.
+2. Never mention internal errors, stack traces, JSON, APIs, Gemini, MCP, or implementation details.
+3. Be polite and professional.
+4. Explain what you are unable to do.
+5. Suggest what the assistant can help with instead.
+6. Use markdown formatting.
+7. Use bullet points when appropriate.
+8. Return ONLY the final answer.
 
 Example:
 
@@ -37,16 +35,41 @@ However, I can help you with:
 - Issues
 - User profiles
 - Organizations
-
 `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-  });
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt,
+    });
 
-  return response.text.trim();
+    const answer = response?.text?.trim();
+
+    if (!answer) {
+      return defaultErrorMessage();
+    }
+
+    return answer;
+  } catch (err) {
+    console.error("Error Answer Generation Failed:", err.message);
+
+    return defaultErrorMessage();
+  }
 };
+
+const defaultErrorMessage = () => `
+❌ I couldn't complete this request.
+
+However, I can still help you with:
+
+- Repository analysis
+- User profiles
+- Repository statistics
+- Pull requests
+- Issues
+- Organizations
+
+Please try another GitHub-related question.
+`;
 
 module.exports = {
   generateErrorAnswer,

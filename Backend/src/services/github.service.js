@@ -1,269 +1,343 @@
 const githubApi = require("../config/github.config");
+const { getMonthLabel } = require("../utils/githubHelpers");
+const githubErrorHandler = require("../middleware/githubErrorHandler");
 
 const getGithubProfile = async (username) => {
-  const response = await githubApi.get(`/users/${username}`);
+  try {
+    if (!username) {
+      throw new Error("Username is required.");
+    }
 
-  return response.data;
+    const { data } = await githubApi.get(`/users/${username}`);
+
+    return data;
+  } catch (error) {
+    githubErrorHandler(error, "Failed to fetch GitHub profile.");
+  }
 };
 
 const getProfileAnalysis = async (username) => {
-  const userResponse = await githubApi.get(`/users/${username}`);
+  try {
+    if (!username) {
+      throw new Error("Username is required.");
+    }
 
-  const reposResponse = await githubApi.get(
-    `/users/${username}/repos?sort=updated&per_page=1`,
-  );
+    const [userResponse, reposResponse] = await Promise.all([
+      githubApi.get(`/users/${username}`),
 
-  const recentRepo = reposResponse.data[0] || null;
+      githubApi.get(`/users/${username}/repos?sort=updated&per_page=1`),
+    ]);
 
-  return {
-    followers: userResponse.data.followers,
+    const user = userResponse.data;
 
-    following: userResponse.data.following,
+    const recentRepo = reposResponse.data?.[0] || null;
 
-    public_repos: userResponse.data.public_repos,
+    return {
+      followers: user.followers,
 
-    recent_repo: recentRepo
-      ? {
-          name: recentRepo.name,
-          html_url: recentRepo.html_url,
-          updated_at: recentRepo.updated_at,
-        }
-      : null,
-  };
+      following: user.following,
+
+      public_repos: user.public_repos,
+
+      recent_repo: recentRepo
+        ? {
+            name: recentRepo.name,
+            html_url: recentRepo.html_url,
+            updated_at: recentRepo.updated_at,
+          }
+        : null,
+    };
+  } catch (error) {
+    githubErrorHandler(error, "Failed to fetch profile analysis.");
+  }
 };
 
 const getRepositoryAnalysis = async (username) => {
-  const reposResponse = await githubApi.get(
-    `/users/${username}/repos?per_page=100`,
-  );
-
-  const repos = reposResponse.data;
-
-  const totalRepos = repos.length;
-
-  const totalStars = repos.reduce(
-    (total, repo) => total + repo.stargazers_count,
-    0,
-  );
-
-  const totalForks = repos.reduce((total, repo) => total + repo.forks_count, 0);
-
-  const topRepo = repos.reduce((best, repo) => {
-    if (repo.stargazers_count > best.stargazers_count) {
-      return repo;
+  try {
+    if (!username) {
+      throw new Error("Username is required.");
     }
 
-    if (
-      repo.stargazers_count === best.stargazers_count &&
-      repo.forks_count > best.forks_count
-    ) {
-      return repo;
+    const { data: repos } = await githubApi.get(
+      `/users/${username}/repos?per_page=100`,
+    );
+
+    if (!repos.length) {
+      return {
+        total_repos: 0,
+        total_stars: 0,
+        total_forks: 0,
+        top_repo: null,
+      };
     }
 
-    if (
-      repo.stargazers_count === best.stargazers_count &&
-      repo.forks_count === best.forks_count &&
-      new Date(repo.updated_at) > new Date(best.updated_at)
-    ) {
-      return repo;
-    }
+    const totalStars = repos.reduce(
+      (sum, repo) => sum + repo.stargazers_count,
+      0,
+    );
 
-    return best;
-  }, repos[0]);
+    const totalForks = repos.reduce((sum, repo) => sum + repo.forks_count, 0);
 
-  return {
-    total_repos: totalRepos,
+    const topRepo = repos.reduce((best, repo) => {
+      if (repo.stargazers_count > best.stargazers_count) {
+        return repo;
+      }
 
-    total_stars: totalStars,
+      if (
+        repo.stargazers_count === best.stargazers_count &&
+        repo.forks_count > best.forks_count
+      ) {
+        return repo;
+      }
 
-    total_forks: totalForks,
+      if (
+        repo.stargazers_count === best.stargazers_count &&
+        repo.forks_count === best.forks_count &&
+        new Date(repo.updated_at) > new Date(best.updated_at)
+      ) {
+        return repo;
+      }
 
-    top_repo: topRepo
-      ? {
-          name: topRepo.name,
-          html_url: topRepo.html_url,
-          stars: topRepo.stargazers_count,
-          forks: topRepo.forks_count,
-        }
-      : null,
-  };
+      return best;
+    }, repos[0]);
+
+    return {
+      total_repos: repos.length,
+
+      total_stars: totalStars,
+
+      total_forks: totalForks,
+
+      top_repo: {
+        name: topRepo.name,
+        html_url: topRepo.html_url,
+        stars: topRepo.stargazers_count,
+        forks: topRepo.forks_count,
+      },
+    };
+  } catch (error) {
+    githubErrorHandler(error, "Failed to fetch repository analysis.");
+  }
 };
 
 const getTechnologyStackAnalysis = async (username) => {
-  const reposResponse = await githubApi.get(
-    `/users/${username}/repos?per_page=100`,
-  );
+  try {
+    if (!username) {
+      throw new Error("Username is required.");
+    }
 
-  const repos = reposResponse.data;
+    const { data: repos } = await githubApi.get(
+      `/users/${username}/repos?per_page=100`,
+    );
 
-  const languageCount = {};
+    const languageCount = {};
 
-  repos.forEach((repo) => {
-    if (!repo.language) return;
+    repos.forEach((repo) => {
+      if (!repo.language) return;
 
-    languageCount[repo.language] = (languageCount[repo.language] || 0) + 1;
-  });
+      languageCount[repo.language] = (languageCount[repo.language] || 0) + 1;
+    });
 
-  const totalLanguageRepos = Object.values(languageCount).reduce(
-    (sum, count) => sum + count,
-    0,
-  );
+    const totalLanguageRepos = Object.values(languageCount).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
 
-  const topLanguages = Object.entries(languageCount)
-    .map(([name, count]) => ({
-      name,
+    if (totalLanguageRepos === 0) {
+      return {
+        total_languages: 0,
+        top_languages: [],
+      };
+    }
 
-      value: Math.round((count / totalLanguageRepos) * 100),
+    const topLanguages = Object.entries(languageCount)
+      .map(([name, count]) => ({
+        name,
 
-      repos: count,
-    }))
-    .sort((a, b) => b.repos - a.repos)
-    .slice(0, 5);
+        value: Math.round((count / totalLanguageRepos) * 100),
 
-  return {
-    total_languages: topLanguages.length,
+        repos: count,
+      }))
+      .sort((a, b) => b.repos - a.repos)
+      .slice(0, 5);
 
-    top_languages: topLanguages,
-  };
+    return {
+      total_languages: topLanguages.length,
+
+      top_languages: topLanguages,
+    };
+  } catch (error) {
+    githubErrorHandler(error, "Failed to fetch technology stack analysis.");
+  }
 };
 
 const getActivityAnalysis = async (username) => {
-  const userResponse = await githubApi.get(`/users/${username}`);
+  try {
+    const [userResponse, reposResponse] = await Promise.all([
+      githubApi.get(`/users/${username}`),
 
-  const createdAt = new Date(userResponse.data.created_at);
+      githubApi.get(`/users/${username}/repos?per_page=100`),
+    ]);
 
-  const now = new Date();
+    const createdAt = new Date(
+      userResponse.data.created_at
+    );
 
-  const accountAgeMonths =
-    (now.getFullYear() - createdAt.getFullYear()) * 12 +
-    (now.getMonth() - createdAt.getMonth()) +
-    1;
+    const now = new Date();
 
-  const monthsToShow = Math.min(accountAgeMonths, 12);
+    const accountAgeMonths =
+      (now.getFullYear() - createdAt.getFullYear()) *
+        12 +
+      (now.getMonth() - createdAt.getMonth()) +
+      1;
 
-  const activityMap = {};
+    const monthsToShow = Math.min(
+      accountAgeMonths,
+      12
+    );
 
-  for (let i = monthsToShow - 1; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const activityMap = {};
 
-    const month = date.toLocaleString("default", {
-      month: "short",
+    for (let i = monthsToShow - 1; i >= 0; i--) {
+      const date = new Date(
+        now.getFullYear(),
+        now.getMonth() - i,
+        1
+      );
+
+      const label = getMonthLabel(date);
+
+      activityMap[label] = {
+        label,
+
+        month: date.toLocaleString("default", {
+          month: "short",
+        }),
+
+        year: String(
+          date.getFullYear()
+        ).slice(-2),
+
+        commits: 0,
+
+        pullRequests: 0,
+
+        repositoriesCreated: 0,
+      };
+    }
+
+    const repos = reposResponse.data.filter(
+      (repo) => !repo.fork
+    );
+
+    repos.forEach((repo) => {
+      const label = getMonthLabel(
+        new Date(repo.created_at)
+      );
+
+      if (activityMap[label]) {
+        activityMap[label].repositoriesCreated++;
+      }
     });
 
-    const year = String(date.getFullYear()).slice(-2);
+    const commitRequests = repos.map((repo) =>
+      githubApi
+        .get(
+          `/repos/${username}/${repo.name}/commits?per_page=100`
+        )
+        .then((response) => ({
+          repo: repo.name,
 
-    const label = `${month} ${year}`;
+          commits: response.data,
+        }))
+    );
 
-    activityMap[label] = {
-      month,
-      year,
-      label,
-      commits: 0,
-      pullRequests: 0,
-      repositoriesCreated: 0,
-    };
-  }
+    const pullRequests = repos.map((repo) =>
+      githubApi
+        .get(
+          `/repos/${username}/${repo.name}/pulls?state=all&per_page=100`
+        )
+        .then((response) => ({
+          repo: repo.name,
 
-  const reposResponse = await githubApi.get(
-    `/users/${username}/repos?per_page=100`,
-  );
+          pulls: response.data,
+        }))
+    );
 
-  const repos = reposResponse.data.filter((repo) => !repo.fork);
+    const [commitResults, prResults] =
+      await Promise.all([
+        Promise.allSettled(commitRequests),
 
-  await Promise.all(
-    repos.map(async (repo) => {
-      const repoCreatedDate = new Date(repo.created_at);
+        Promise.allSettled(pullRequests),
+      ]);
 
-      const repoMonth = repoCreatedDate.toLocaleString("default", {
-        month: "short",
+    commitResults.forEach((result) => {
+      if (result.status !== "fulfilled") {
+        return;
+      }
+
+      result.value.commits.forEach((commit) => {
+        const commitDate =
+          commit?.commit?.author?.date;
+
+        if (!commitDate) {
+          return;
+        }
+
+        const label = getMonthLabel(
+          new Date(commitDate)
+        );
+
+        if (activityMap[label]) {
+          activityMap[label].commits++;
+        }
       });
+    });
 
-      const repoYear = String(repoCreatedDate.getFullYear()).slice(-2);
-
-      const repoLabel = `${repoMonth} ${repoYear}`;
-
-      if (activityMap[repoLabel]) {
-        activityMap[repoLabel].repositoriesCreated++;
+    prResults.forEach((result) => {
+      if (result.status !== "fulfilled") {
+        return;
       }
 
-      try {
-        const commitsResponse = await githubApi.get(
-          `/repos/${username}/${repo.name}/commits?per_page=100`,
+      result.value.pulls.forEach((pull) => {
+        const label = getMonthLabel(
+          new Date(pull.created_at)
         );
 
-        commitsResponse.data.forEach((commit) => {
-          const commitDate = new Date(commit.commit.author.date);
+        if (activityMap[label]) {
+          activityMap[label].pullRequests++;
+        }
+      });
+    });
 
-          const commitMonth = commitDate.toLocaleString("default", {
-            month: "short",
-          });
+    return {
+      accountAgeMonths,
 
-          const commitYear = String(commitDate.getFullYear()).slice(-2);
+      monthsDisplayed: monthsToShow,
 
-          const commitLabel = `${commitMonth} ${commitYear}`;
-
-          if (activityMap[commitLabel]) {
-            activityMap[commitLabel].commits++;
-          }
-        });
-      } catch {
-        console.log(`Commit fetch failed: ${repo.name}`);
-      }
-
-      try {
-        const pullsResponse = await githubApi.get(
-          `/repos/${username}/${repo.name}/pulls?state=all&per_page=100`,
-        );
-
-        pullsResponse.data.forEach((pull) => {
-          const pullDate = new Date(pull.created_at);
-
-          const pullMonth = pullDate.toLocaleString("default", {
-            month: "short",
-          });
-
-          const pullYear = String(pullDate.getFullYear()).slice(-2);
-
-          const pullLabel = `${pullMonth} ${pullYear}`;
-
-          if (activityMap[pullLabel]) {
-            activityMap[pullLabel].pullRequests++;
-          }
-        });
-      } catch {
-        console.log(`PR fetch failed: ${repo.name}`);
-      }
-    }),
-  );
-
-  return {
-    accountAgeMonths: accountAgeMonths,
-
-    monthsDisplayed: monthsToShow,
-
-    activity: Object.values(activityMap),
-  };
+      activity: Object.values(activityMap),
+    };
+  } catch (error) {
+    githubErrorHandler(
+      error,
+      "Failed to fetch activity analysis."
+    );
+  }
 };
 
-const getRepositoryQualityAnalysis =async (username) => {
-console.log("githubApi =", githubApi);
-    const reposResponse =
-      await githubApi.get(
-        `/users/${username}/repos?per_page=100`
-      );
+const getRepositoryQualityAnalysis = async (username) => {
+  try {
+    const { data: repos } = await githubApi.get(
+      `/users/${username}/repos?per_page=100`,
+    );
 
-    const repos =
-      reposResponse.data.filter(
-        (repo) => !repo.fork
-      );
+    const filteredRepos = repos.filter((repo) => !repo.fork);
 
-    const totalRepos =
-      repos.length;
+    const totalRepos = filteredRepos.length;
 
-    if (totalRepos === 0) {
+    if (!totalRepos) {
       return {
         score: 0,
-
         metrics: {
           readme: 0,
           description: 0,
@@ -273,695 +347,398 @@ console.log("githubApi =", githubApi);
       };
     }
 
-    let readmeCount = 0;
-
     let descriptionCount = 0;
-
-    let documentationCount = 0;
-
     let topicsCount = 0;
 
-    for (const repo of repos) {
-
-      if (
-        repo.description &&
-        repo.description.trim()
-      ) {
+    filteredRepos.forEach((repo) => {
+      if (repo.description?.trim()) {
         descriptionCount++;
       }
 
-      if (
-        repo.topics &&
-        repo.topics.length > 0
-      ) {
+      if (repo.topics?.length) {
         topicsCount++;
       }
+    });
 
-      try {
+    const readmeRequests = filteredRepos.map((repo) =>
+      githubApi.get(`/repos/${username}/${repo.name}/readme`).then((res) => ({
+        repo,
+        readme: res.data,
+      })),
+    );
 
-        const readmeResponse =
-          await githubApi.get(
-            `/repos/${username}/${repo.name}/readme`
-          );
+    const results = await Promise.allSettled(readmeRequests);
 
-        if (readmeResponse.data) {
+    let readmeCount = 0;
+    let documentationCount = 0;
 
-          readmeCount++;
+    results.forEach((result) => {
+      if (result.status !== "fulfilled") return;
 
-          const content =
-            Buffer.from(
-              readmeResponse.data.content,
-              "base64"
-            ).toString("utf8");
+      readmeCount++;
 
-          const wordCount =
-            content
-              .replace(
-                /[#*_`\-\[\]\(\)]/g,
-                ""
-              )
-              .split(/\s+/)
-              .filter(Boolean)
-              .length;
+      const content = Buffer.from(
+        result.value.readme.content,
+        "base64",
+      ).toString("utf8");
 
-          if (
-            wordCount >= 100
-          ) {
-            documentationCount++;
-          }
-        }
+      const wordCount = content
+        .replace(/[#*_`\-\[\]\(\)]/g, "")
+        .split(/\s+/)
+        .filter(Boolean).length;
 
-      } catch (error) {
-
-        console.log(
-          `README not found: ${repo.name}`
-        );
-
+      if (wordCount >= 100) {
+        documentationCount++;
       }
-    }
+    });
 
-    const readmeScore =
-      (readmeCount /
-        totalRepos) *
-      30;
+    const readmeScore = (readmeCount / totalRepos) * 30;
 
-    const descriptionScore =
-      (descriptionCount /
-        totalRepos) *
-      30;
+    const descriptionScore = (descriptionCount / totalRepos) * 30;
 
-    const documentationScore =
-      (documentationCount /
-        totalRepos) *
-      20;
+    const documentationScore = (documentationCount / totalRepos) * 20;
 
-    const topicsScore =
-      (topicsCount /
-        totalRepos) *
-      20;
-
-    const totalScore =
-      readmeScore +
-      descriptionScore +
-      documentationScore +
-      topicsScore;
+    const topicsScore = (topicsCount / totalRepos) * 20;
 
     return {
+      total_repos: totalRepos,
 
-      total_repos:
-        totalRepos,
-
-      score:
-        Math.round(
-          totalScore
-        ),
+      score: Math.round(
+        readmeScore + descriptionScore + documentationScore + topicsScore,
+      ),
 
       metrics: {
-        readme:
-          Math.round(
-            readmeScore
-          ),
-
-        description:
-          Math.round(
-            descriptionScore
-          ),
-
-        documentation:
-          Math.round(
-            documentationScore
-          ),
-
-        topics:
-          Math.round(
-            topicsScore
-          ),
+        readme: Math.round(readmeScore),
+        description: Math.round(descriptionScore),
+        documentation: Math.round(documentationScore),
+        topics: Math.round(topicsScore),
       },
 
       counts: {
-        readme:
-          readmeCount,
-
-        description:
-          descriptionCount,
-
-        documentation:
-          documentationCount,
-
-        topics:
-          topicsCount,
+        readme: readmeCount,
+        description: descriptionCount,
+        documentation: documentationCount,
+        topics: topicsCount,
       },
     };
-  };
-
-
-  const getPortfolioReadinessAnalysis = async (username) => {
-
-  const userResponse =
-    await githubApi.get(
-      `/users/${username}`
-    );
-
-  const user =
-    userResponse.data;
-
-  const checks = [];
-
-  // Bio
-  const hasBio =
-    !!(
-      user.bio &&
-      user.bio.trim()
-    );
-
-  checks.push({
-    name: "Bio",
-    status: hasBio,
-    score: hasBio ? 20 : 0,
-    maxScore: 20,
-  });
-
-  // Profile Photo
-  const hasProfilePhoto =
-    !!user.avatar_url;
-
-  checks.push({
-    name: "Profile Photo",
-    status: hasProfilePhoto,
-    score: hasProfilePhoto ? 20 : 0,
-    maxScore: 20,
-  });
-
-  // Website
-  const hasWebsite =
-    !!(
-      user.blog &&
-      user.blog.trim()
-    );
-
-  checks.push({
-    name: "Website",
-    status: hasWebsite,
-    score: hasWebsite ? 20 : 0,
-    maxScore: 20,
-  });
-
-  // README Quality
-  let readmeQuality =
-    false;
-
-  try {
-
-    const readmeRepo =
-      await githubApi.get(
-        `/repos/${username}/${username}`
-      );
-
-    if (
-      readmeRepo.data
-    ) {
-      readmeQuality =
-        true;
-    }
-
-  } catch {}
-
-  checks.push({
-    name: "README Quality",
-    status: readmeQuality,
-    score: readmeQuality ? 20 : 0,
-    maxScore: 20,
-  });
-
-  // Pinned Repositories
-  let pinnedRepos =
-    false;
-
-  try {
-
-    const reposResponse =
-      await githubApi.get(
-        `/users/${username}/repos?sort=updated&per_page=6`
-      );
-
-    const repos =
-      reposResponse.data.filter(
-        (repo) => !repo.fork
-      );
-
-    pinnedRepos =
-      repos.length > 0;
-
-  } catch {}
-
-  checks.push({
-    name: "Pinned Repos",
-    status: pinnedRepos,
-    score: pinnedRepos ? 20 : 0,
-    maxScore: 20,
-  });
-
-  const completed =
-    checks.filter(
-      (item) =>
-        item.status
-    ).length;
-
-  const totalScore =
-    checks.reduce(
-      (sum, item) =>
-        sum + item.score,
-      0
-    );
-
-  const score =
-    Math.round(
-      totalScore
-    );
-
-  return {
-    score,
-    completed,
-    total:
-      checks.length,
-    checks,
-  };
+  } catch (error) {
+    githubErrorHandler(error, "Failed to fetch repository quality analysis.");
+  }
 };
 
+const getPortfolioReadinessAnalysis = async (username) => {
+  try {
+    const [userResponse, readmeRepoResponse, reposResponse] =
+      await Promise.allSettled([
+        githubApi.get(`/users/${username}`),
+
+        // Profile README repository
+        githubApi.get(`/repos/${username}/${username}`),
+
+        githubApi.get(
+          `/users/${username}/repos?sort=updated&per_page=6`
+        ),
+      ]);
+
+    const user =
+      userResponse.status === "fulfilled"
+        ? userResponse.value.data
+        : {};
+
+    const nonForkRepos =
+      reposResponse.status === "fulfilled"
+        ? reposResponse.value.data.filter(
+            (repo) => !repo.fork
+          )
+        : [];
+
+    const hasPinnedRepos = nonForkRepos.length > 0;
+
+    const hasReadmeRepo =
+      readmeRepoResponse.status === "fulfilled";
+
+    const checks = [
+      {
+        name: "Bio",
+        status: !!user.bio?.trim(),
+        score: user.bio?.trim() ? 20 : 0,
+        maxScore: 20,
+      },
+
+      {
+        name: "Profile Photo",
+        status: !!user.avatar_url,
+        score: user.avatar_url ? 20 : 0,
+        maxScore: 20,
+      },
+
+      {
+        name: "Website",
+        status: !!user.blog?.trim(),
+        score: user.blog?.trim() ? 20 : 0,
+        maxScore: 20,
+      },
+
+      {
+        name: "README Quality",
+        status: hasReadmeRepo,
+        score: hasReadmeRepo ? 20 : 0,
+        maxScore: 20,
+      },
+
+      {
+        name: "Pinned Repos",
+        status: hasPinnedRepos,
+        score: hasPinnedRepos ? 20 : 0,
+        maxScore: 20,
+      },
+    ];
+
+    return {
+      score: checks.reduce(
+        (sum, item) => sum + item.score,
+        0
+      ),
+
+      completed: checks.filter(
+        (item) => item.status
+      ).length,
+
+      total: checks.length,
+
+      checks,
+    };
+  } catch (error) {
+    githubErrorHandler(
+      error,
+      "Failed to fetch portfolio readiness."
+    );
+  }
+};
 
 const getMostStarredRepository = async (username) => {
+  try {
+    const { data: repos } = await githubApi.get(
+      `/users/${username}/repos?per_page=100`,
+    );
 
-    const reposResponse =
-      await githubApi.get(
-        `/users/${username}/repos?per_page=100`
-      );
-
-    const repos =
-      reposResponse.data;
-
-    if (
-      !repos ||
-      repos.length === 0
-    ) {
+    if (!repos.length) {
       return null;
     }
 
-    const mostStarredRepo =
-      repos.reduce(
-        (best, repo) => {
+    const mostStarredRepo = repos.reduce((best, repo) => {
+      if (repo.stargazers_count > best.stargazers_count) {
+        return repo;
+      }
 
-          // Priority 1:
-          // Highest Stars
-          if (
-            repo.stargazers_count >
-            best.stargazers_count
-          ) {
-            return repo;
-          }
+      if (
+        repo.stargazers_count === best.stargazers_count &&
+        new Date(repo.updated_at) > new Date(best.updated_at)
+      ) {
+        return repo;
+      }
 
-          // Priority 2:
-          // If stars are equal,
-          // choose most recently updated repo
-          if (
-            repo.stargazers_count ===
-              best.stargazers_count &&
-            new Date(
-              repo.updated_at
-            ) >
-              new Date(
-                best.updated_at
-              )
-          ) {
-            return repo;
-          }
-
-          return best;
-
-        },
-        repos[0]
-      );
+      return best;
+    }, repos[0]);
 
     return {
-      name:
-        mostStarredRepo.name,
-
-      html_url:
-        mostStarredRepo.html_url,
-
-      stars:
-        mostStarredRepo.stargazers_count,
-
-      language:
-        mostStarredRepo.language ||
-        "Unknown",
+      name: mostStarredRepo.name,
+      html_url: mostStarredRepo.html_url,
+      stars: mostStarredRepo.stargazers_count,
+      language: mostStarredRepo.language || "Unknown",
     };
-  };
-
-  const getMostForkedRepository = async (username) => {
-
-  const reposResponse =
-    await githubApi.get(
-      `/users/${username}/repos?per_page=100`
-    );
-
-  const repos =
-    reposResponse.data;
-
-  if (
-    !repos ||
-    repos.length === 0
-  ) {
-    return null;
+  } catch (error) {
+    githubErrorHandler(error, "Failed to fetch most starred repository.");
   }
-
-  const mostForkedRepo =
-    repos.reduce(
-      (best, repo) => {
-
-        // Priority 1:
-        // Highest Forks
-        if (
-          repo.forks_count >
-          best.forks_count
-        ) {
-          return repo;
-        }
-
-        // Priority 2:
-        // If forks are equal,
-        // choose most recently updated repo
-        if (
-          repo.forks_count ===
-            best.forks_count &&
-          new Date(
-            repo.updated_at
-          ) >
-            new Date(
-              best.updated_at
-            )
-        ) {
-          return repo;
-        }
-
-        return best;
-
-      },
-      repos[0]
-    );
-
-  return {
-    name:
-      mostForkedRepo.name,
-
-    html_url:
-      mostForkedRepo.html_url,
-
-    forks:
-      mostForkedRepo.forks_count,
-
-    language:
-      mostForkedRepo.language ||
-      "Unknown",
-  };
 };
 
+const getMostForkedRepository = async (username) => {
+  try {
+    const { data: repos } = await githubApi.get(
+      `/users/${username}/repos?per_page=100`,
+    );
 
+    if (!repos.length) {
+      return null;
+    }
+
+    const mostForkedRepo = repos.reduce((best, repo) => {
+      if (repo.forks_count > best.forks_count) {
+        return repo;
+      }
+
+      if (
+        repo.forks_count === best.forks_count &&
+        new Date(repo.updated_at) > new Date(best.updated_at)
+      ) {
+        return repo;
+      }
+
+      return best;
+    }, repos[0]);
+
+    return {
+      name: mostForkedRepo.name,
+      html_url: mostForkedRepo.html_url,
+      forks: mostForkedRepo.forks_count,
+      language: mostForkedRepo.language || "Unknown",
+    };
+  } catch (error) {
+    githubErrorHandler(error, "Failed to fetch most forked repository.");
+  }
+};
 
 const getActivityStatus = async (username) => {
-
-  const reposResponse =
-    await githubApi.get(
-      `/users/${username}/repos?per_page=100`
+  try {
+    const { data } = await githubApi.get(
+      `/users/${username}/repos?per_page=100`,
     );
 
-  const repos =
-    reposResponse.data.filter(
-      (repo) => !repo.fork
+    const repos = data.filter((repo) => !repo.fork);
+
+    const thirtyDaysAgo = new Date();
+
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    let commitCount = 0;
+    let lastActive = null;
+
+    const commitDays = new Set();
+
+    const commitRequests = repos.map((repo) =>
+      githubApi
+        .get(`/repos/${username}/${repo.name}/commits?per_page=100`)
+        .then((res) => res.data),
     );
 
-  const thirtyDaysAgo =
-    new Date();
+    const results = await Promise.allSettled(commitRequests);
 
-  thirtyDaysAgo.setDate(
-    thirtyDaysAgo.getDate() - 30
-  );
+    results.forEach((result) => {
+      if (result.status !== "fulfilled") {
+        return;
+      }
 
-  let commitCount = 0;
+      result.value.forEach((commit) => {
+        const commitDate = new Date(commit.commit.author.date);
 
-  let lastActive = null;
-
-  const commitDays =
-    new Set();
-
-  for (const repo of repos) {
-
-    try {
-
-      const commitsResponse =
-        await githubApi.get(
-          `/repos/${username}/${repo.name}/commits?per_page=100`
-        );
-
-      commitsResponse.data.forEach(
-        (commit) => {
-
-          const commitDate =
-            new Date(
-              commit.commit.author.date
-            );
-
-          if (
-            !lastActive ||
-            commitDate >
-              new Date(lastActive)
-          ) {
-            lastActive =
-              commit.commit.author.date;
-          }
-
-          const day =
-            commitDate
-              .toISOString()
-              .split("T")[0];
-
-          commitDays.add(day);
-
-          if (
-            commitDate >=
-            thirtyDaysAgo
-          ) {
-            commitCount++;
-          }
-
+        if (!lastActive || commitDate > new Date(lastActive)) {
+          lastActive = commit.commit.author.date;
         }
-      );
 
-    } catch (error) {
+        const day = commitDate.toISOString().split("T")[0];
 
-      console.log(
-        `Commit fetch failed: ${repo.name}`
-      );
+        commitDays.add(day);
 
+        if (commitDate >= thirtyDaysAgo) {
+          commitCount++;
+        }
+      });
+    });
+
+    let status = "Inactive";
+
+    if (commitCount >= 20) {
+      status = "Highly Active";
+    } else if (commitCount >= 10) {
+      status = "Moderate";
+    } else if (commitCount >= 1) {
+      status = "Low";
     }
-  }
 
-  let status = "Inactive";
+    let streak = 0;
 
-  if (commitCount >= 20) {
+    const currentDate = new Date();
 
-    status = "Highly Active";
+    while (true) {
+      const day = currentDate.toISOString().split("T")[0];
 
-  } else if (
-    commitCount >= 10
-  ) {
-
-    status = "Moderate";
-
-  } else if (
-    commitCount >= 1
-  ) {
-
-    status = "Low";
-
-  }
-
-  let streak = 0;
-
-  const currentDate =
-    new Date();
-
-  while (true) {
-
-    const day =
-      currentDate
-        .toISOString()
-        .split("T")[0];
-
-    if (
-      commitDays.has(day)
-    ) {
+      if (!commitDays.has(day)) {
+        break;
+      }
 
       streak++;
 
-      currentDate.setDate(
-        currentDate.getDate() - 1
-      );
-
-    } else {
-
-      break;
-
+      currentDate.setDate(currentDate.getDate() - 1);
     }
 
+    return {
+      status,
+      commitCount,
+      streak,
+      lastActive,
+    };
+  } catch (error) {
+    githubErrorHandler(error, "Failed to fetch activity status.");
   }
-
-  return {
-    status,
-    commitCount,
-    streak,
-    lastActive,
-  };
 };
 
+const getDeveloperScore = async (username) => {
+  try {
+    const [profile, repository, portfolio, activity] = await Promise.all([
+      getProfileAnalysis(username),
+      getRepositoryAnalysis(username),
+      getPortfolioReadinessAnalysis(username),
+      getActivityStatus(username),
+    ]);
 
-const getDeveloperScore = async (
-  username
-) => {
-  const profile =
-    await getProfileAnalysis(
-      username
-    );
+    let score = 0;
 
-  const repository =
-    await getRepositoryAnalysis(
-      username
-    );
+    /* Followers */
+    if (profile.followers >= 20) score += 10;
+    else if (profile.followers >= 10) score += 8;
+    else if (profile.followers >= 5) score += 6;
+    else if (profile.followers >= 1) score += 3;
 
-  const portfolio =
-    await getPortfolioReadinessAnalysis(
-      username
-    );
+    /* Repositories */
+    if (repository.total_repos >= 20) score += 20;
+    else if (repository.total_repos >= 15) score += 15;
+    else if (repository.total_repos >= 10) score += 10;
+    else if (repository.total_repos >= 5) score += 5;
 
-  const activity =
-    await getActivityStatus(
-      username
-    );
+    /* Stars */
+    if (repository.total_stars >= 20) score += 10;
+    else if (repository.total_stars >= 10) score += 8;
+    else if (repository.total_stars >= 5) score += 6;
+    else if (repository.total_stars >= 1) score += 3;
 
-  let score = 0;
+    /* Forks */
+    if (repository.total_forks >= 10) score += 10;
+    else if (repository.total_forks >= 5) score += 8;
+    else if (repository.total_forks >= 1) score += 4;
 
-  /* Followers */
+    /* Activity */
+    if (activity.status === "Highly Active") {
+      score += 25;
+    } else if (activity.status === "Moderate") {
+      score += 15;
+    } else if (activity.status === "Low") {
+      score += 5;
+    }
 
-  if (profile.followers >= 20)
-    score += 10;
-  else if (
-    profile.followers >= 10
-  )
-    score += 8;
-  else if (
-    profile.followers >= 5
-  )
-    score += 6;
-  else if (
-    profile.followers >= 1
-  )
-    score += 3;
+    /* Portfolio */
+    score += Math.round(portfolio.score * 0.25);
 
-  /* Repositories */
+    score = Math.min(score, 100);
 
-  if (
-    repository.total_repos >= 20
-  )
-    score += 20;
-  else if (
-    repository.total_repos >= 15
-  )
-    score += 15;
-  else if (
-    repository.total_repos >= 10
-  )
-    score += 10;
-  else if (
-    repository.total_repos >= 5
-  )
-    score += 5;
+    let level = "Beginner";
 
-  /* Stars */
+    if (score >= 80) {
+      level = "Expert";
+    } else if (score >= 60) {
+      level = "Advanced";
+    } else if (score >= 40) {
+      level = "Intermediate";
+    }
 
-  if (
-    repository.total_stars >= 20
-  )
-    score += 10;
-  else if (
-    repository.total_stars >= 10
-  )
-    score += 8;
-  else if (
-    repository.total_stars >= 5
-  )
-    score += 6;
-  else if (
-    repository.total_stars >= 1
-  )
-    score += 3;
-
-  /* Forks */
-
-  if (
-    repository.total_forks >= 10
-  )
-    score += 10;
-  else if (
-    repository.total_forks >= 5
-  )
-    score += 8;
-  else if (
-    repository.total_forks >= 1
-  )
-    score += 4;
-
-  /* Activity */
-
-  if (
-    activity.status ===
-    "Highly Active"
-  ) {
-    score += 25;
-  } else if (
-    activity.status ===
-    "Moderate"
-  ) {
-    score += 15;
-  } else if (
-    activity.status ===
-    "Low"
-  ) {
-    score += 5;
+    return {
+      score,
+      level,
+    };
+  } catch (error) {
+    githubErrorHandler(error, "Failed to calculate developer score.");
   }
-
-  /* Portfolio */
-
-  score += Math.round(
-    portfolio.score * 0.25
-  );
-
-  score = Math.min(score, 100);
-
-  let level =
-    "Beginner";
-
-  if (score >= 80)
-    level = "Expert";
-  else if (score >= 60)
-    level = "Advanced";
-  else if (score >= 40)
-    level =
-      "Intermediate";
-
-  return {
-    score,
-    level,
-  };
 };
+
 module.exports = {
   getGithubProfile,
   getProfileAnalysis,
@@ -969,7 +746,6 @@ module.exports = {
   getTechnologyStackAnalysis,
   getActivityAnalysis,
   getRepositoryQualityAnalysis,
-  getTechnologyStackAnalysis,
   getPortfolioReadinessAnalysis,
   getMostStarredRepository,
   getMostForkedRepository,

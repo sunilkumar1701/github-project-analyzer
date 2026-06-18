@@ -1,7 +1,22 @@
 const axios = require("axios");
 
+const MCP_URL = "https://api.githubcopilot.com/mcp/";
+
+const mcpClient = axios.create({
+  baseURL: MCP_URL,
+  timeout: 30000,
+  headers: {
+    Authorization: `Bearer ${process.env.GITHUB_MCP_PAT}`,
+    "Content-Type": "application/json",
+  },
+});
+
 const parseMcpResponse = (rawResponse) => {
   try {
+    if (!rawResponse) {
+      throw new Error("Empty MCP response");
+    }
+
     if (typeof rawResponse === "object") {
       return rawResponse;
     }
@@ -13,84 +28,112 @@ const parseMcpResponse = (rawResponse) => {
 
     return JSON.parse(jsonText);
   } catch (error) {
+    console.error("MCP Response Parse Error:", error.message);
+
     return {
       error: true,
-      message: error.message,
+      message: "Unable to parse MCP response.",
       raw: rawResponse,
     };
   }
 };
 
-const executeMcpTool = async (toolName, args = {}) => {
+const executeMcpTool = async (
+  toolName,
+  args = {},
+) => {
   try {
-    const response = await axios.post(
-      "https://api.githubcopilot.com/mcp/",
-      {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "tools/call",
-        params: {
-          name: toolName,
-          arguments: args,
-        },
+    if (!process.env.GITHUB_MCP_PAT) {
+      throw new Error(
+        "GITHUB_MCP_PAT is missing.",
+      );
+    }
+
+    const response = await mcpClient.post("", {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: {
+        name: toolName,
+        arguments: args,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.GITHUB_MCP_PAT}`,
-          "Content-Type": "application/json",
-        },
-      },
+    });
+
+    const parsedResponse = parseMcpResponse(
+      response.data,
     );
 
-    const parsedResponse = parseMcpResponse(response.data);
+    if (parsedResponse?.error) {
+      throw new Error(
+        parsedResponse.message ||
+          "Tool execution failed.",
+      );
+    }
 
     return parsedResponse;
   } catch (error) {
-    const errorResponse = {
-      error: true,
-      message: error.response?.data || error.message || "Unknown MCP Error",
-    };
+    console.error("\n========== MCP ERROR ==========\n");
 
-    console.log("\n========== MCP ERROR ==========\n");
-    console.log(JSON.stringify(errorResponse, null, 2));
-    console.log("\n===============================\n");
+    console.error(
+      error.response?.data || error.message,
+    );
 
-    return errorResponse;
+    console.error(
+      "\n===============================\n",
+    );
+
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to execute MCP tool."
+    );
   }
 };
 
 const getAvailableTools = async () => {
   try {
-    const response = await axios.post(
-      "https://api.githubcopilot.com/mcp/",
-      {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "tools/list",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.GITHUB_MCP_PAT}`,
-          "Content-Type": "application/json",
-        },
-      },
+    if (!process.env.GITHUB_MCP_PAT) {
+      throw new Error(
+        "GITHUB_MCP_PAT is missing."
+      );
+    }
+
+    const response = await mcpClient.post("", {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/list",
+    });
+
+    const parsedResponse = parseMcpResponse(
+      response.data,
     );
 
-    const parsedResponse = parseMcpResponse(response.data);
+    const totalTools =
+      parsedResponse?.result?.tools?.length || 0;
 
     console.log("\n========== TOOLS RESPONSE ==========\n");
 
-    console.log(`Loaded ${parsedResponse?.result?.tools?.length || 0} tools`);
+    console.log(
+      `Loaded ${totalTools} tools`
+    );
 
-    console.log("\n====================================\n");
+    console.log(
+      "\n====================================\n",
+    );
 
     return parsedResponse;
   } catch (error) {
-    console.log("\n========== TOOLS ERROR ==========\n");
+    console.error(
+      "\n========== TOOLS ERROR ==========\n",
+    );
 
-    console.log(error.response?.data || error.message);
+    console.error(
+      error.response?.data || error.message,
+    );
 
-    console.log("\n=================================\n");
+    console.error(
+      "\n=================================\n",
+    );
 
     return null;
   }
