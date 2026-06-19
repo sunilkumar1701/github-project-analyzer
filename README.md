@@ -530,7 +530,13 @@ https://docs.github.com/en/rest
 
 # 🚀 Local Setup
 
-## Clone Repository
+> **Important:** GitHub Talent Analyzer is a **browser extension**, not a traditional website. Running the frontend development server alone (`localhost:5173`) will not display the extension UI like a normal webpage.
+
+The extension only appears when visiting a **GitHub profile page** and opening the browser side panel.
+
+---
+
+## 1. Clone Repository
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/github-talent-analyzer.git
@@ -538,17 +544,27 @@ git clone https://github.com/YOUR_USERNAME/github-talent-analyzer.git
 
 ---
 
-## Backend
+# Backend Setup
+
+Move into the backend folder:
 
 ```bash
 cd Backend
+```
 
+Install dependencies:
+
+```bash
 npm install
+```
 
+Start the backend server:
+
+```bash
 npm run dev
 ```
 
-Runs on:
+Backend runs on:
 
 ```text
 http://localhost:5000
@@ -556,22 +572,88 @@ http://localhost:5000
 
 ---
 
-## Frontend
+# Frontend Setup
+
+Move into frontend folder:
 
 ```bash
 cd Frontend
+```
 
+Install dependencies:
+
+```bash
 npm install
+```
 
+Start Vite development server:
+
+```bash
 npm run dev
 ```
 
-Runs on:
+Development server:
 
 ```text
 http://localhost:5173
 ```
 
+> Opening `localhost:5173` directly will not show the extension UI.
+
+---
+
+# Build Extension
+
+Generate production files:
+
+```bash
+npm run build
+```
+
+This creates:
+
+```text
+Frontend/
+ ├── dist/
+ │    ├── assets/
+ │    ├── manifest.json
+ │    ├── index.html
+ │    └── ...
+```
+
+The `dist` folder is the extension package that should be loaded into the browser.
+
+---
+
+# Load Extension In Google Chrome
+
+### Open Extensions Page
+
+Navigate to:
+
+```text
+chrome://extensions
+```
+
+Enable:
+
+```text
+Developer Mode
+```
+
+Click:
+
+```text
+Load Unpacked
+```
+
+Select:
+
+```text
+Frontend/dist
+```
+
+The extension will now be installed.
 ---
 
 # 🔐 Environment Variables
