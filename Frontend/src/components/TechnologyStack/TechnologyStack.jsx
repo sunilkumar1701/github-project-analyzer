@@ -159,29 +159,37 @@ const TechnologyStack = ({ username, onLoaded, refreshKey }) => {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="tech-loading">Loading...</div>
+            <div className="skeleton skeleton-circle" style={{ width: '100%', height: '100%', border: 'none' }}></div>
           )}
 
           <div className="chart-center">{totalLanguages}</div>
         </div>
 
         <div className="language-list">
-          {technologyData.map((language) => (
-            <div key={language.name} className="language-item">
-              <div className="language-left">
-                <span
-                  className="language-dot"
-                  style={{
-                    background: language.color,
-                  }}
-                />
-
-                <span>{language.name}</span>
+          {technologyData.length > 0 ? (
+            technologyData.map((language) => (
+              <div key={language.name} className="language-item">
+                <div className="language-left">
+                  <span
+                    className="language-dot"
+                    style={{
+                      background: language.color,
+                    }}
+                  />
+                  <span>{language.name}</span>
+                </div>
+                <span className="language-value">{language.value}%</span>
               </div>
-
-              <span className="language-value">{language.value}%</span>
+            ))
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+               <div className="skeleton skeleton-text" style={{ width: '100%', margin: 0 }}></div>
+               <div className="skeleton skeleton-text" style={{ width: '80%', margin: 0 }}></div>
+               <div className="skeleton skeleton-text" style={{ width: '90%', margin: 0 }}></div>
+               <div className="skeleton skeleton-text" style={{ width: '70%', margin: 0 }}></div>
+               <div className="skeleton skeleton-text" style={{ width: '60%', margin: 0 }}></div>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

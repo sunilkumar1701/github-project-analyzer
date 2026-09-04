@@ -113,8 +113,10 @@ const ActivityStatus = ({ username, onLoaded, refreshKey }) => {
     return (
       <div className="status-card">
         <h3 className="status-title">Activity Status</h3>
-
-        <div className="status-loading">Loading...</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+          <div className="skeleton skeleton-text" style={{ width: '80%', margin: 0 }}></div>
+          <div className="skeleton skeleton-text" style={{ width: '60%', margin: 0 }}></div>
+        </div>
       </div>
     );
   }

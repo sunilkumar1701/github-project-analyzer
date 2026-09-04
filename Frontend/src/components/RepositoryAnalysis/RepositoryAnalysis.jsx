@@ -61,7 +61,12 @@ const RepositoryAnalysis = ({ username, onLoaded, refreshKey }) => {
 
   if (loading) {
     return (
-      <div className="repository-analysis">Loading repository analysis...</div>
+      <div className="repository-analysis">
+        <div className="repo-analysis-card skeleton skeleton-box"></div>
+        <div className="repo-analysis-card skeleton skeleton-box"></div>
+        <div className="repo-analysis-card skeleton skeleton-box"></div>
+        <div className="repo-analysis-card top-repo-card skeleton skeleton-box"></div>
+      </div>
     );
   }
 

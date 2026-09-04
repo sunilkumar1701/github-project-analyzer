@@ -68,8 +68,11 @@ const MostForkedRepo = ({ username, onLoaded, refreshKey }) => {
     return (
       <div className="mfr-card">
         <h3 className="mfr-title">Most Forked Repository</h3>
-
-        <div className="mfr-loading">Loading...</div>
+        <div className="mfr-content" style={{ gap: '12px', display: 'flex', flexDirection: 'column', marginTop: '12px' }}>
+          <div className="skeleton skeleton-text" style={{ width: '80%', margin: 0 }}></div>
+          <div className="skeleton skeleton-text" style={{ width: '40%', margin: 0 }}></div>
+          <div className="skeleton skeleton-text short" style={{ margin: 0 }}></div>
+        </div>
       </div>
     );
   }

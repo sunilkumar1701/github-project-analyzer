@@ -106,17 +106,14 @@ const PortfolioReadiness = ({ username, onLoaded, refreshKey }) => {
     return (
       <div className="pr-card">
         <h3 className="pr-title">Portfolio Readiness</h3>
-
-        <div
-          style={{
-            height: "80px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#94a3b8",
-          }}
-        >
-          Loading...
+        <div className="pr-content">
+          <div className="pr-chart-wrapper skeleton skeleton-circle" style={{ width: '80px', height: '80px', flexShrink: 0, border: 'none' }}></div>
+          <div className="pr-checks" style={{ width: '100%', gap: '12px', display: 'flex', flexDirection: 'column', paddingLeft: '16px' }}>
+            <div className="skeleton skeleton-text" style={{ width: '100%', margin: 0 }}></div>
+            <div className="skeleton skeleton-text" style={{ width: '80%', margin: 0 }}></div>
+            <div className="skeleton skeleton-text" style={{ width: '90%', margin: 0 }}></div>
+            <div className="skeleton skeleton-text" style={{ width: '70%', margin: 0 }}></div>
+          </div>
         </div>
       </div>
     );

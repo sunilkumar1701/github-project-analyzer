@@ -151,17 +151,14 @@ const RepositoryQuality = ({ username, onLoaded, refreshKey }) => {
     return (
       <div className="rq-card">
         <h3 className="rq-title">Repository Quality</h3>
-
-        <div
-          style={{
-            height: "80px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#94a3b8",
-          }}
-        >
-          Loading...
+        <div className="rq-content">
+          <div className="rq-chart-wrapper skeleton skeleton-circle" style={{ width: '80px', height: '80px', flexShrink: 0, border: 'none' }}></div>
+          <div className="rq-metrics" style={{ width: '100%', gap: '12px', display: 'flex', flexDirection: 'column', paddingLeft: '16px' }}>
+            <div className="skeleton skeleton-text" style={{ width: '100%', margin: 0 }}></div>
+            <div className="skeleton skeleton-text" style={{ width: '80%', margin: 0 }}></div>
+            <div className="skeleton skeleton-text" style={{ width: '90%', margin: 0 }}></div>
+            <div className="skeleton skeleton-text" style={{ width: '70%', margin: 0 }}></div>
+          </div>
         </div>
       </div>
     );

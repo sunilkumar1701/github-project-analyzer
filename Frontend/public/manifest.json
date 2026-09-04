@@ -10,7 +10,7 @@
 
   "host_permissions": [
     "https://github.com/*",
-    "https://github-talent-analyzer-api.onrender.com/*"
+    "http://localhost:5000/*"
   ],
 
   "icons": {

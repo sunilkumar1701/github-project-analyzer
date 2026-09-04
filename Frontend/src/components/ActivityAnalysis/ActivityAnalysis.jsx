@@ -121,8 +121,7 @@ const ActivityAnalysis = ({ username, onLoaded, refreshKey }) => {
     return (
       <div className="activity-card">
         <div className="activity-title">Activity (Last 12 Months)</div>
-
-        <div className="activity-loading">Loading...</div>
+        <div className="skeleton skeleton-box" style={{ width: '100%', height: 'calc(100% - 30px)', marginTop: '10px' }}></div>
       </div>
     );
   }

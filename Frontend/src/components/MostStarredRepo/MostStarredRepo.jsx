@@ -68,8 +68,11 @@ const MostStarredRepo = ({ username, onLoaded, refreshKey }) => {
     return (
       <div className="msr-card">
         <h3 className="msr-title">Most Starred Repository</h3>
-
-        <div className="msr-loading">Loading...</div>
+        <div className="msr-content" style={{ gap: '12px', display: 'flex', flexDirection: 'column', marginTop: '12px' }}>
+          <div className="skeleton skeleton-text" style={{ width: '80%', margin: 0 }}></div>
+          <div className="skeleton skeleton-text" style={{ width: '40%', margin: 0 }}></div>
+          <div className="skeleton skeleton-text short" style={{ margin: 0 }}></div>
+        </div>
       </div>
     );
   }

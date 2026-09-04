@@ -1,0 +1,37 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.production
+
+# Python bytecode cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Python egg / build artifacts
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

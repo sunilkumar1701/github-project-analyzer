@@ -94,7 +94,13 @@ const ProfileAnalysis = ({ username, onLoaded, refreshKey }) => {
   }, [recentRepo?.updated_at]);
 
   if (loading) {
-    return <div className="profile-analysis">Loading profile analysis...</div>;
+    return (
+      <div className="profile-analysis">
+        <div className="analysis-card skeleton skeleton-box"></div>
+        <div className="analysis-card skeleton skeleton-box"></div>
+        <div className="analysis-card repo-card skeleton skeleton-box"></div>
+      </div>
+    );
   }
 
   if (error) {

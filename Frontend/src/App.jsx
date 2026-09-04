@@ -7,7 +7,7 @@ import {
   useCallback,
 } from "react";
 
-import { getGithubUsername } from "./services/githubService";
+import { getCurrentTabContext } from "./services/githubService";
 
 import ProfileCard from "./components/ProfileCard/ProfileCard";
 import ProfileAnalysis from "./components/ProfileAnalysis/ProfileAnalysis";
@@ -20,6 +20,7 @@ import MostStarredRepo from "./components/MostStarredRepo/MostStarredRepo";
 import MostForkedRepo from "./components/MostForkedRepo/MostForkedRepo";
 import ActivityStatus from "./components/ActivityStatus/ActivityStatus";
 import ActionButtons from "./components/ActionButtons/ActionButtons";
+import NavigationModal from "./components/NavigationModal/NavigationModal";
 
 import { useDashboardContext } from "./context/DashboardContext";
 
@@ -31,8 +32,8 @@ function App() {
 
   const TOTAL_MODULES = 10;
 
-  const [username, setUsername] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [detectedContext, setDetectedContext] = useState({ type: 'LOADING' });
+  const [activeDashboardUser, setActiveDashboardUser] = useState(null);
   const [loadedModules, setLoadedModules] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -44,62 +45,74 @@ function App() {
 
   const handleReanalyze = useCallback(() => {
     console.log("🔄 Reanalyzing dashboard");
-
     setLoadedModules(0);
-
     setRefreshKey((prev) => prev + 1);
   }, []);
 
-  const isDashboardLoading =
-    loadedModules < TOTAL_MODULES;
+  const isDashboardLoading = loadedModules < TOTAL_MODULES;
+
+  const updateContext = useCallback(async () => {
+    try {
+      const context = await getCurrentTabContext();
+      if (mountedRef.current) {
+        setDetectedContext(context);
+        
+        // Auto-open dashboard if a GitHub user is detected (no modal)
+        if (context.type === "GITHUB_USER") {
+          setActiveDashboardUser(context.username);
+        }
+      }
+    } catch (error) {
+      console.error("Context Update Error:", error);
+      if (mountedRef.current) {
+        setDetectedContext({ type: 'NON_GITHUB' });
+      }
+    }
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
+    updateContext();
 
-    const loadUsername = async () => {
-      try {
-        setIsLoading(true);
-
-        const githubUsername = await getGithubUsername();
-
-        if (!mountedRef.current) return;
-
-        if (!githubUsername) {
-          throw new Error(
-            "Unable to detect GitHub username."
-          );
+    if (typeof chrome !== "undefined" && chrome.tabs) {
+      const handleTabUpdate = (tabId, changeInfo, tab) => {
+        if (changeInfo.url || changeInfo.status === 'complete') {
+          updateContext();
         }
+      };
 
-        console.log(
-          "Detected GitHub Username:",
-          githubUsername
-        );
+      const handleTabActivate = (activeInfo) => {
+        updateContext();
+      };
 
-        setUsername(githubUsername);
-      } catch (error) {
-        console.error(
-          "Username Detection Error:",
-          error
-        );
+      chrome.tabs.onUpdated.addListener(handleTabUpdate);
+      chrome.tabs.onActivated.addListener(handleTabActivate);
 
-        if (mountedRef.current) {
-          setUsername(null);
-        }
-      } finally {
-        if (mountedRef.current) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadUsername();
+      return () => {
+        mountedRef.current = false;
+        chrome.tabs.onUpdated.removeListener(handleTabUpdate);
+        chrome.tabs.onActivated.removeListener(handleTabActivate);
+      };
+    }
 
     return () => {
       mountedRef.current = false;
     };
-  }, []);
+  }, [updateContext]);
 
-  if (isLoading) {
+  const handleOpenDashboard = (username) => {
+    setActiveDashboardUser(username);
+    setLoadedModules(0);
+    setRefreshKey((prev) => prev + 1);
+  };
+
+  const showModal = 
+    !activeDashboardUser || 
+    (detectedContext.type === "GITHUB_USER" && detectedContext.username !== activeDashboardUser) || 
+    detectedContext.type === "NON_GITHUB" || 
+    detectedContext.type === "GITHUB_SYSTEM";
+
+  if (detectedContext.type === "LOADING") {
     return (
       <div
         className="dashboard"
@@ -111,127 +124,125 @@ function App() {
           color: "#fff",
         }}
       >
-        Loading GitHub User...
-      </div>
-    );
-  }
-
-  if (!username) {
-    return (
-      <div
-        className="dashboard"
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-          color: "#ef4444",
-        }}
-      >
-        Failed to detect GitHub username.
+        Loading Context...
       </div>
     );
   }
 
   return (
-    <div className="dashboard" ref={dashboardRef}>
-      <div className="full-row">
-        <ProfileCard
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
+    <>
+      {showModal && (
+        <NavigationModal 
+          context={detectedContext} 
+          onOpenDashboard={handleOpenDashboard} 
         />
-      </div>
+      )}
 
-      <div className="full-row">
-        <ProfileAnalysis
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
-      </div>
+      {activeDashboardUser && (
+        <div 
+          className="dashboard" 
+          ref={dashboardRef} 
+          style={{ display: showModal ? 'none' : 'flex' }}
+        >
+          <div className="full-row">
+            <ProfileCard
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
+          </div>
 
-      <div className="full-row">
-        <RepositoryAnalysis
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
-      </div>
+          <div className="full-row">
+            <ProfileAnalysis
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
+          </div>
 
-      <div
-        className="row"
-        style={{
-          gridTemplateColumns: "4fr 6fr",
-        }}
-      >
-        <TechnologyStack
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
+          <div className="full-row">
+            <RepositoryAnalysis
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
+          </div>
 
-        <ActivityAnalysis
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
-      </div>
+          <div
+            className="row"
+            style={{
+              gridTemplateColumns: "4fr 6fr",
+            }}
+          >
+            <TechnologyStack
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
 
-      <div
-        className="row"
-        style={{
-          gridTemplateColumns: "4fr 6fr",
-        }}
-      >
-        <RepositoryQuality
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
+            <ActivityAnalysis
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
+          </div>
 
-        <PortfolioReadiness
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
-      </div>
+          <div
+            className="row"
+            style={{
+              gridTemplateColumns: "4fr 6fr",
+            }}
+          >
+            <RepositoryQuality
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
 
-      <div
-        className="row"
-        style={{
-          gridTemplateColumns: "3fr 3fr 4fr",
-        }}
-      >
-        <MostStarredRepo
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
+            <PortfolioReadiness
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
+          </div>
 
-        <MostForkedRepo
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
+          <div
+            className="row"
+            style={{
+              gridTemplateColumns: "3fr 3fr 4fr",
+            }}
+          >
+            <MostStarredRepo
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
 
-        <ActivityStatus
-          username={username}
-          refreshKey={refreshKey}
-          onLoaded={handleModuleLoaded}
-        />
-      </div>
+            <MostForkedRepo
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
 
-      <div className="full-row">
-        <ActionButtons
-          isLoading={isLoading || isDashboardLoading}
-          dashboardRef={dashboardRef}
-          onReanalyze={handleReanalyze}
-          username={username}
-          dashboardData={dashboardData}
-        />
-      </div>
-    </div>
+            <ActivityStatus
+              username={activeDashboardUser}
+              refreshKey={refreshKey}
+              onLoaded={handleModuleLoaded}
+            />
+          </div>
+
+          <div className="full-row">
+            <ActionButtons
+              isLoading={isDashboardLoading}
+              dashboardRef={dashboardRef}
+              onReanalyze={handleReanalyze}
+              username={activeDashboardUser}
+              dashboardData={dashboardData}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
