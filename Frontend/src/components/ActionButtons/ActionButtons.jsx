@@ -1,6 +1,6 @@
 import "./ActionButtons.css";
 
-import { RefreshCw, Download } from "lucide-react";
+import { RefreshCw, Download, LogOut } from "lucide-react";
 import chatbotIcon from "../../assets/Chatbot.png";
 
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -9,6 +9,8 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 import Chatbot from "../Chatbot/Chatbot";
+import { COLORS } from '../../constants/colorConstant';
+import { supabase } from '../../services/supabaseClient';
 
 const ActionButtons = ({
   isLoading,
@@ -33,6 +35,10 @@ const ActionButtons = ({
     setShowChatbot((prev) => !prev);
   }, []);
 
+  const handleSignOut = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, []);
+
   const handleDownload = useCallback(async () => {
     if (isDownloading) return;
 
@@ -55,7 +61,7 @@ const ActionButtons = ({
       const canvas = await html2canvas(dashboard, {
         scale: 2,
         useCORS: true,
-        backgroundColor: "#08111f",
+        backgroundColor: COLORS.background.main,
         width: 720,
         windowWidth: 720,
         logging: false,
@@ -196,6 +202,16 @@ const ActionButtons = ({
           <img src={chatbotIcon} alt="AI Assistant" className="chatbot-image" />
 
           <span>AI</span>
+        </button>
+
+        {/* Sign Out */}
+        <button
+          className="icon-btn signout-btn"
+          onClick={handleSignOut}
+          title="Sign Out"
+          style={{ marginLeft: 'auto' }}
+        >
+          <LogOut size={20} />
         </button>
       </div>
 

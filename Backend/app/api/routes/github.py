@@ -5,7 +5,8 @@ Port of routes/github.routes.js.
 All routes are prefixed with /api/github in main.py.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from app.core.auth import verify_supabase_token
 
 from app.controllers.github_controller import (
     handle_get_profile,
@@ -20,7 +21,7 @@ from app.controllers.github_controller import (
     handle_get_activity_status,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_supabase_token)])
 
 
 @router.get("/profile/{username}")

@@ -9,18 +9,13 @@
 
   background: linear-gradient(
     90deg,
-    #07152f 0%,
-    #0b1730 50%,
-    #07152f 100%
+    var(--bg-skeleton-dark) 0%,
+    var(--bg-skeleton-light) 50%,
+    var(--bg-skeleton-dark) 100%
   );
 
   border: 1px solid
-    rgba(
-      255,
-      255,
-      255,
-      0.08
-    );
+    var(--opacity-white-08);
 
   border-radius: 18px;
 
@@ -33,12 +28,7 @@
 
   box-shadow:
     0 20px 50px
-      rgba(
-        0,
-        0,
-        0,
-        0.45
-      );
+      var(--opacity-black-45);
 }
 
 .chat-header {
@@ -50,22 +40,12 @@
 
   padding: 0 18px;
 
-  background: rgba(
-    255,
-    255,
-    255,
-    0.03
-  );
+  background: var(--opacity-white-03);
 
   backdrop-filter: blur(12px);
 
   border-bottom: 1px solid
-    rgba(
-      255,
-      255,
-      255,
-      0.08
-    );
+    var(--opacity-white-08);
 }
 
 .chat-header h3 {
@@ -89,7 +69,7 @@
 }
 
 .close-btn:hover {
-  color: #a855f7;
+  color: var(--primary-light);
 }
 
 .chat-body {
@@ -110,7 +90,7 @@
 }
 
 .chat-body::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: var(--border-dark);
   border-radius: 10px;
 }
 
@@ -143,20 +123,15 @@
 .user-message .message-text {
   background: linear-gradient(
     135deg,
-    #8b5cf6,
-    #6366f1
+    var(--primary-main),
+    var(--info-indigo)
   );
 
   color: white;
 }
 
 .bot-message .message-text {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.08
-  );
+  background: var(--opacity-white-08);
 
   color: white;
 
@@ -167,12 +142,7 @@
   padding: 15px;
 
   border-top: 1px solid
-    rgba(
-      255,
-      255,
-      255,
-      0.08
-    );
+    var(--opacity-white-08);
 }
 
 .chat-form {
@@ -193,18 +163,13 @@
 
   padding: 0 14px;
 
-  background: rgba(
-    255,
-    255,
-    255,
-    0.08
-  );
+  background: var(--opacity-white-08);
 
   color: white;
 }
 
 .message-input::placeholder {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .send-btn {
@@ -219,8 +184,8 @@
 
   background: linear-gradient(
     135deg,
-    #8b5cf6,
-    #6366f1
+    var(--primary-main),
+    var(--info-indigo)
   );
 
   color: white;
@@ -274,7 +239,7 @@
 }
 
 .message-text code {
-  background: rgba(255,255,255,.1);
+  background: var(--opacity-white-10);
   padding: 2px 5px;
   border-radius: 4px;
 }.message-text table {
@@ -285,18 +250,18 @@
 
 .message-text th,
 .message-text td {
-  border: 1px solid rgba(255,255,255,.15);
+  border: 1px solid var(--opacity-white-15);
   padding: 10px;
 }
 
 .message-text th {
-  background: rgba(255,255,255,.08);
+  background: var(--opacity-white-08);
 }
 
 .message-text blockquote {
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid var(--info-indigo);
   padding-left: 15px;
-  color: #cbd5e1;
+  color: var(--text-light-muted);
   margin: 15px 0;
 }
 

@@ -5,12 +5,13 @@ Port of routes/chat.routes.js.
 Mounted at /api/chat in main.py.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from app.core.auth import verify_supabase_token
 
 from app.schemas.chat import ChatRequest
 from app.controllers.chat_controller import handle_chat_with_github
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_supabase_token)])
 
 
 @router.post("")

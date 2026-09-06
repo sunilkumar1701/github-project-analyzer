@@ -21,8 +21,11 @@ import MostForkedRepo from "./components/MostForkedRepo/MostForkedRepo";
 import ActivityStatus from "./components/ActivityStatus/ActivityStatus";
 import ActionButtons from "./components/ActionButtons/ActionButtons";
 import NavigationModal from "./components/NavigationModal/NavigationModal";
+import Auth from "./components/Auth/Auth";
 
 import { useDashboardContext } from "./context/DashboardContext";
+import { COLORS } from './constants/colorConstant';
+import { supabase } from './services/supabaseClient';
 
 function App() {
   const { dashboardData } = useDashboardContext();
@@ -36,6 +39,8 @@ function App() {
   const [activeDashboardUser, setActiveDashboardUser] = useState(null);
   const [loadedModules, setLoadedModules] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const handleModuleLoaded = useCallback(() => {
     setLoadedModules((prev) =>
@@ -97,8 +102,26 @@ function App() {
 
     return () => {
       mountedRef.current = false;
+      chrome.tabs?.onUpdated?.removeListener(handleTabUpdate);
+      chrome.tabs?.onActivated?.removeListener(handleTabActivate);
     };
   }, [updateContext]);
+
+  useEffect(() => {
+    // Check active session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      setIsAuthLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+      setIsAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleOpenDashboard = (username) => {
     setActiveDashboardUser(username);
@@ -121,12 +144,33 @@ function App() {
           justifyContent: "center",
           alignItems: "center",
           minHeight: "100vh",
-          color: "#fff",
+          color: COLORS.text.primary,
         }}
       >
         Loading Context...
       </div>
     );
+  }
+
+  if (isAuthLoading) {
+    return (
+      <div
+        className="dashboard"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          color: COLORS.text.primary,
+        }}
+      >
+        Checking Authentication...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Auth onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
 
   return (

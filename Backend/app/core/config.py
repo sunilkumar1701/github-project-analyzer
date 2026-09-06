@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: str = ""
     GITHUB_MCP_PAT: str = ""
     GEMINI_API_KEY: str = ""
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
 
     # CORS
     CORS_ORIGINS: str = "*"
