@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     GITHUB_API: str = "https://api.github.com"
     GITHUB_TOKEN: str = ""
     GITHUB_MCP_PAT: str = ""
-    GEMINI_API_KEY: str = ""
+    
+    # Groq AI — used by the new agentic chatbot
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
 

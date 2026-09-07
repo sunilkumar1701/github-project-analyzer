@@ -19,3 +19,6 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# Project documentation to ignore
+Prompt md Files/

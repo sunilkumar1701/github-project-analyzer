@@ -8,7 +8,7 @@ AI-powered GitHub developer profile analysis backend built with FastAPI.
 - **FastAPI** — async web framework
 - **httpx** — async HTTP client for GitHub REST API and MCP
 - **Pydantic** — request/response validation
-- **Google Gemini** — AI tool selection and answer generation
+
 - **GitHub Remote MCP Server** — tool execution via JSON-RPC
 
 ## Quick Start
@@ -48,7 +48,7 @@ Required variables:
 | `GITHUB_API` | GitHub REST API base URL |
 | `GITHUB_TOKEN` | GitHub Personal Access Token |
 | `GITHUB_MCP_PAT` | GitHub PAT for MCP Server |
-| `GEMINI_API_KEY` | Google Gemini API key |
+
 
 ### 4. Run Development Server
 
@@ -96,7 +96,7 @@ Backend/
 │   ├── api/routes/           # HTTP route handlers
 │   ├── controllers/          # Request/response orchestration
 │   ├── services/             # Business logic
-│   ├── clients/              # External API clients (GitHub, Gemini, MCP)
+│   ├── clients/              # External API clients (GitHub, MCP)
 │   ├── mcp/                  # MCP tool cache and test client
 │   ├── schemas/              # Pydantic request/response models
 │   ├── middleware/           # Error handling and logging
@@ -130,4 +130,4 @@ Routes → Controllers → Services → Clients / External APIs
 - **Routes**: HTTP routing only
 - **Controllers**: Request validation and response orchestration
 - **Services**: Business logic and calculations
-- **Clients**: External API communication (GitHub, Gemini, MCP)
+- **Clients**: External API communication (GitHub, MCP)

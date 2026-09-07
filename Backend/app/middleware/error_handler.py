@@ -31,13 +31,6 @@ class MCPException(Exception):
         super().__init__(self.message)
 
 
-class GeminiException(Exception):
-    """Custom exception for Gemini errors."""
-
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(self.message)
-
 
 def handle_github_error(error: Exception, default_message: str = "GitHub request failed.") -> None:
     """
@@ -97,16 +90,6 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(MCPException)
     async def mcp_exception_handler(request: Request, exc: MCPException) -> JSONResponse:
-        return JSONResponse(
-            status_code=502,
-            content={
-                "success": False,
-                "message": exc.message,
-            },
-        )
-
-    @app.exception_handler(GeminiException)
-    async def gemini_exception_handler(request: Request, exc: GeminiException) -> JSONResponse:
         return JSONResponse(
             status_code=502,
             content={

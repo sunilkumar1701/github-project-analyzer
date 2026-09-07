@@ -1,6 +1,5 @@
 """
 FastAPI application entry point.
-Port of app.js + server.js.
 
 Start with:
     uvicorn app.main:app --reload --port 5000
@@ -17,11 +16,12 @@ from app.middleware.error_handler import register_exception_handlers
 from app.middleware.logging import setup_logging
 
 from app.clients.github_client import init_github_client, close_github_client
-from app.clients.gemini_client import init_gemini_client
+from app.clients.groq_client import init_groq_client
 from app.clients.mcp_client import init_mcp_client, close_mcp_client
 
 from app.services.mcp_service import get_available_tools
 from app.mcp.tool_cache import set_tools_cache
+from app.agent.tool_registry import register_tools_from_mcp
 
 from app.api.routes.github import router as github_router
 from app.api.routes.developer_score import router as developer_score_router
@@ -35,11 +35,10 @@ logger = logging.getLogger(__name__)
 
 async def initialize_mcp_tools() -> None:
     """
-    Load MCP tools at startup and cache them.
-    Port of initializeMcpTools() from server.js.
+    Load MCP tools at startup, cache them, and register in the tool registry.
     """
     try:
-        logger.info("\n🔄 Loading MCP Tools...\n")
+        logger.info("\nLoading MCP Tools...\n")
 
         tools_response = await get_available_tools()
 
@@ -50,7 +49,7 @@ async def initialize_mcp_tools() -> None:
                 tools = result.get("tools")
 
         if not isinstance(tools, list) or len(tools) == 0:
-            logger.warning("⚠️ No MCP tools found.")
+            logger.warning("No MCP tools found.")
             return
 
         tool_list = [
@@ -62,12 +61,16 @@ async def initialize_mcp_tools() -> None:
             for tool in tools
         ]
 
+        # Cache raw tool list (for backward compat with mcp_service)
         set_tools_cache(tool_list)
 
-        logger.info("✅ Loaded %d MCP tools", len(tool_list))
+        # Register in new agent tool registry (applies allow-list)
+        register_tools_from_mcp(tool_list)
+
+        logger.info("Loaded %d MCP tools", len(tool_list))
 
     except Exception as error:
-        logger.error("❌ MCP Initialization Error:")
+        logger.error("MCP Initialization Error:")
         logger.error(str(error))
 
 
@@ -75,13 +78,12 @@ async def initialize_mcp_tools() -> None:
 async def lifespan(app: FastAPI):
     """
     Application lifespan — runs on startup and shutdown.
-    Replaces the startServer() function from server.js.
     """
     # Startup
     logger.info("Starting GitHub Talent Analyzer Backend...")
 
     await init_github_client()
-    init_gemini_client()
+    init_groq_client()           # New: Groq client
     await init_mcp_client()
     await initialize_mcp_tools()
 
@@ -100,12 +102,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="GitHub Talent Analyzer",
     description="AI-powered GitHub developer profile analysis backend",
-    version="2.0.0",
+    version="3.0.0",
     lifespan=lifespan,
 )
 
 
-# CORS — mirrors the Express cors({ origin: true, credentials: true })
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -119,7 +121,7 @@ app.add_middleware(
 register_exception_handlers(app)
 
 
-# Health check — mirrors app.get("/")
+# Health check
 @app.get("/")
 async def health_check():
     return {
@@ -128,7 +130,7 @@ async def health_check():
     }
 
 
-# Mount routes — mirrors app.use("/api/github", ...) etc.
+# Mount routes
 app.include_router(github_router, prefix="/api/github")
 app.include_router(developer_score_router, prefix="/api/github/developer-score")
 app.include_router(chat_router, prefix="/api/chat")

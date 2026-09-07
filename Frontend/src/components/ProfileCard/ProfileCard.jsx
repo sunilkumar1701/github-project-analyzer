@@ -35,6 +35,7 @@ const ProfileCard = ({ username, onLoaded, refreshKey }) => {
         });
 
         updateDashboardData("developerScore", scoreData);
+        updateDashboardData("profileCard", profileData);
 
         console.log("Developer Score:", scoreData);
 

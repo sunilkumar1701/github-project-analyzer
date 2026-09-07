@@ -1,32 +1,44 @@
 """
-Chat API route.
-Port of routes/chat.routes.js.
+Chat API route — POST /api/chat
 
-Mounted at /api/chat in main.py.
+Returns Server-Sent Events (SSE) stream.
+Protected by Supabase JWT authentication.
 """
 
 from fastapi import APIRouter, Depends
-from app.core.auth import verify_supabase_token
 
+from app.core.auth import verify_supabase_token
 from app.schemas.chat import ChatRequest
-from app.controllers.chat_controller import handle_chat_with_github
+from app.controllers.chat_controller import handle_chat_stream
 
 router = APIRouter(dependencies=[Depends(verify_supabase_token)])
 
 
 @router.post("")
-async def chat_with_github(request: ChatRequest):
+async def chat_stream(
+    request: ChatRequest,
+    auth_user=Depends(verify_supabase_token),
+):
     """
     POST /api/chat
 
     Request body:
-        { username, message, dashboardContext? }
+        {
+            username: str,
+            message: str,
+            dashboard_context?: dict,
+            conversation_history?: [{role, content}],
+            conversation_summary?: str
+        }
 
     Response:
-        { success, source, answer }
+        text/event-stream with SSE events:
+        - agent_started
+        - tool_started
+        - tool_completed
+        - message_delta
+        - source
+        - message_completed
+        - error
     """
-    return await handle_chat_with_github(
-        username=request.username,
-        message=request.message,
-        dashboard_context=request.dashboardContext,
-    )
+    return await handle_chat_stream(request=request, auth_user=auth_user)

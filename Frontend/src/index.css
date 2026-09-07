@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --bg: #08111f;
   --card-bg: #101b2d;

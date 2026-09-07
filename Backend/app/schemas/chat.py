@@ -1,20 +1,21 @@
 """
-Chat-related Pydantic schemas.
+Chat schemas — Pydantic models for the new agentic chat API.
 """
 
 from pydantic import BaseModel
 from typing import Any, Optional
 
 
+class ConversationTurn(BaseModel):
+    """A single turn in conversation history sent from the frontend."""
+    role: str   # "user" or "assistant"
+    content: str
+
+
 class ChatRequest(BaseModel):
-    """Chat request body — matches the POST /api/chat body from frontend."""
+    """POST /api/chat request body for the new agentic chatbot."""
     username: str
     message: str
-    dashboardContext: Optional[dict[str, Any]] = None
-
-
-class ChatResponse(BaseModel):
-    """Chat response — matches { success, source, answer }."""
-    success: bool = True
-    source: str = "mcp"
-    answer: str = ""
+    dashboard_context: Optional[dict[str, Any]] = None
+    conversation_history: Optional[list[ConversationTurn]] = []
+    conversation_summary: Optional[str] = None

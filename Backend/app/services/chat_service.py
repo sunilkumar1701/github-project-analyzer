@@ -1,126 +1,63 @@
 """
-Chat service — orchestrates the chat flow.
-Port of services/chat.service.js.
+Chat service — thin orchestrator for the agentic chatbot.
+
+Applies domain guard, then delegates to the agent loop.
+Returns an async generator of SSE events.
 """
 
+import json
 import logging
+from typing import Any, AsyncGenerator
 
-from app.services.mcp_service import execute_mcp_tool
-from app.services.gemini_service import select_tool_with_gemini
-from app.services.answer_generation_service import generate_answer, generate_error_answer
+from app.agent.domain_guard import check_domain
+from app.agent.agent_loop import run_agent
+from app.agent.schemas import ConversationTurn
 
 logger = logging.getLogger(__name__)
 
 
-async def process_question(
+def _sse(event: dict) -> str:
+    return f"data: {json.dumps(event)}\n\n"
+
+
+async def stream_chat(
     username: str,
-    source: str,
-    dashboard_context: dict | None,
-    question: str,
-) -> dict:
+    message: str,
+    dashboard_context: dict[str, Any] | None,
+    conversation_history: list[ConversationTurn] | None,
+    conversation_summary: str | None,
+) -> AsyncGenerator[str, None]:
     """
-    Process a chat question by routing to dashboard context or MCP.
+    Main entry point for chat streaming.
 
-    Exact port of processQuestion() from chat.service.js.
+    Applies domain guard first, then runs the agent loop.
 
-    Args:
-        username: GitHub username.
-        source: "dashboard" or "mcp".
-        dashboard_context: Dashboard analysis data (for dashboard source).
-        question: The user's question.
-
-    Returns:
-        Dict with 'source' and 'answer'.
+    Yields SSE event strings.
     """
-    logger.info("\n========== AI ROUTER ==========\n")
-    logger.info("Question : %s", question)
-    logger.info("Username : %s", username)
+    if not message or not message.strip():
+        yield _sse({"type": "error", "message": "Please enter a message."})
+        return
 
-    if source == "dashboard":
-        logger.info("Source   : DASHBOARD CONTEXT")
-    else:
-        logger.info("Source   : MCP")
+    if not username:
+        yield _sse({"type": "error", "message": "No GitHub username provided."})
+        return
 
-    logger.info("\n===============================\n")
+    # Domain guard — lightweight, no LLM call
+    is_allowed, refusal = check_domain(message)
+    if not is_allowed:
+        yield _sse({"type": "agent_started"})
+        yield _sse({"type": "message_delta", "content": refusal})
+        yield _sse({"type": "message_completed"})
+        return
 
-    try:
-        if not question or not question.strip():
-            raise ValueError("Question is required.")
+    logger.info("Chat request — user: %s | message: %.80s", username, message)
 
-        # DASHBOARD CONTEXT
-        if source == "dashboard":
-            answer = await generate_answer(
-                question=question,
-                data=dashboard_context or {},
-            )
-
-            return {
-                "source": "dashboard",
-                "answer": answer,
-            }
-
-        # MCP FLOW
-        tool_config = None
-
-        try:
-            tool_config = await select_tool_with_gemini(question, username)
-
-            logger.info("\n========== MCP TOOL ==========\n")
-            logger.info("Tool : %s", tool_config.get("tool"))
-            logger.info("Args : %s", str(tool_config.get("args", {})))
-            logger.info("\n==============================\n")
-
-        except Exception as error:
-            answer = await generate_error_answer(
-                question=question,
-                error=str(error) or "Unable to determine which tool should handle this request.",
-            )
-
-            return {
-                "source": "mcp",
-                "answer": answer,
-            }
-
-        if not tool_config or not tool_config.get("tool"):
-            answer = await generate_error_answer(
-                question=question,
-                error="No suitable tool was found for this request.",
-            )
-
-            return {
-                "source": "mcp",
-                "answer": answer,
-            }
-
-        try:
-            mcp_result = await execute_mcp_tool(
-                tool_config["tool"],
-                tool_config.get("args", {}),
-            )
-
-            answer = await generate_answer(
-                question=question,
-                data=mcp_result,
-            )
-
-            return {
-                "source": "mcp",
-                "answer": answer,
-            }
-
-        except Exception as error:
-            answer = await generate_error_answer(
-                question=question,
-                error=str(error) or "Unable to process the request with the selected tool.",
-            )
-
-            return {
-                "source": "mcp",
-                "answer": answer,
-            }
-
-    except Exception as error:
-        return {
-            "source": source or "unknown",
-            "answer": str(error) or "Something went wrong while processing your request.",
-        }
+    # Run agentic loop
+    async for event in run_agent(
+        username=username,
+        question=message,
+        dashboard_data=dashboard_context,
+        history=conversation_history,
+        summary=conversation_summary,
+    ):
+        yield event

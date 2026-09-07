@@ -8,7 +8,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-import Chatbot from "../Chatbot/Chatbot";
+import ChatPanel from "../chat/ChatPanel";
 import { COLORS } from '../../constants/colorConstant';
 import { supabase } from '../../services/supabaseClient';
 
@@ -216,10 +216,9 @@ const ActionButtons = ({
       </div>
 
       {showChatbot && (
-        <Chatbot
+        <ChatPanel
           onClose={() => setShowChatbot(false)}
           username={username}
-          dashboardContext={dashboardData}
         />
       )}
     </>
