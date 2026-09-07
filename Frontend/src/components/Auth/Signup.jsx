@@ -56,13 +56,17 @@ const Signup = ({ onSwitchToLogin, onLoginSuccess }) => {
     e.preventDefault();
     if (validate()) {
       setIsLoading(true);
+      
+      const authWebUrl = import.meta.env.VITE_AUTH_WEB_URL || 'http://localhost:5173';
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: name
-          }
+          },
+          emailRedirectTo: `${authWebUrl}/auth/verify`
         }
       });
       setIsLoading(false);
@@ -189,7 +193,7 @@ const Signup = ({ onSwitchToLogin, onLoginSuccess }) => {
 
       <div className="auth-footer">
         Already have an account?{' '}
-        <button type="button" className="auth-link" onClick={onSwitchToLogin}>
+        <button type="button" className="auth-link" onClick={() => onSwitchToLogin()}>
           Login
         </button>
       </div>

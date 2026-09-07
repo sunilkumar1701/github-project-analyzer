@@ -4,7 +4,7 @@ import { FaGithub } from 'react-icons/fa';
 import { supabase } from '../../services/supabaseClient';
 import './Auth.css';
 
-const Login = ({ onSwitchToSignup, onLoginSuccess, defaultEmail = '', message = '' }) => {
+const Login = ({ onSwitchToSignup, onSwitchToForgotPassword, onLoginSuccess, defaultEmail = '', message = '' }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState('');
@@ -99,7 +99,7 @@ const Login = ({ onSwitchToSignup, onLoginSuccess, defaultEmail = '', message = 
         </div>
 
         <div className="auth-options">
-          <button type="button" className="auth-link">
+          <button type="button" className="auth-link" onClick={() => onSwitchToForgotPassword(email)}>
             Forgot password?
           </button>
         </div>
