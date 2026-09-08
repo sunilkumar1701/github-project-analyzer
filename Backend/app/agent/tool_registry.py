@@ -179,13 +179,19 @@ def get_groq_tool_definitions() -> list[dict[str, Any]]:
                         },
                         "reduction": {
                             "type": "object",
-                            "description": "Optional deterministic data reduction for lists.",
+                            "description": "Structured QueryPlan representing your semantic intent for generic execution. Required for aggregations, sorting, and filtering.",
                             "properties": {
-                                "operation": { "type": "string", "enum": ["count", "top_n", "latest_n", "select_fields"] },
-                                "field": { "type": "string", "description": "Field to sort or select by" },
-                                "n": { "type": "integer", "description": "Number of items to return" },
-                                "filter_key": { "type": "string", "description": "Key to filter by" },
-                                "filter_value": { "type": "string", "description": "Value to filter by" }
+                                "capability": { "type": "string", "description": "The capability being exercised, e.g., REPOSITORIES, PULL_REQUESTS, PROFILE" },
+                                "operation": { "type": "string", "description": "e.g., count, sum, max, min, top_n, latest_n, sort, filter, select_fields, group_by, aggregate" },
+                                "metric": { "type": "string", "description": "e.g., stars, forks, language, stargazers_count" },
+                                "scope": { "type": "string", "description": "e.g., all_user_repositories, specific_repository, current_profile" },
+                                "limit": { "type": "integer", "description": "Limit N for top_n or latest_n" },
+                                "sort": { "type": "string", "description": "Sort direction or field, e.g., desc or updated_at" },
+                                "filters": {
+                                    "type": "object",
+                                    "description": "Key-value pairs to filter results",
+                                    "additionalProperties": True
+                                }
                             }
                         }
                     },
@@ -200,10 +206,10 @@ def get_groq_tool_definitions() -> list[dict[str, Any]]:
 _CAPABILITY_DEFINITIONS = {
     Capability.PROFILE: "- get_user(username: string)",
     Capability.REPOSITORIES: "- search_repositories(query: string)\n- list_repositories(owner: string, sort: string)",
-    Capability.LANGUAGES: "- analyze_languages(owner: string)",
+    Capability.LANGUAGES: "- list_repositories(owner: string, sort: string) -> Use 'aggregate' operation to count languages",
     Capability.README_CODE: "- get_file_contents(owner: string, repo: string, path: string)",
-    Capability.PULL_REQUESTS: "- get_latest_pr(author: string)\n- search_issues(query: string)",
-    Capability.ISSUES: "- search_issues(query: string)",
+    Capability.PULL_REQUESTS: "- search_issues(query: string) -> Use 'is:pr' in query",
+    Capability.ISSUES: "- search_issues(query: string) -> Use 'is:issue' in query",
     Capability.ACTIVITY: "- list_commits(owner: string, repo: string)"
 }
 
@@ -219,7 +225,13 @@ def get_compact_tool_catalog(active_capabilities: list[str]) -> str:
         if cap in _CAPABILITY_DEFINITIONS:
             lines.append(_CAPABILITY_DEFINITIONS[cap])
             
-    return "Available tool_names for github_mcp:\n" + "\n".join(lines)
+    header = "Available tool_names for github_mcp:\n"
+    instructions = (
+        "\nIMPORTANT: Use the 'reduction' object to specify semantic operations like 'sum', 'max', 'min', "
+        "'count', 'top_n', 'latest_n', 'filter', or 'sort' instead of retrieving all data and doing it manually. "
+        "The backend will enforce validity against a Capability Contract."
+    )
+    return header + "\n".join(lines) + instructions
 
 
 def is_tool_allowed(name: str) -> bool:

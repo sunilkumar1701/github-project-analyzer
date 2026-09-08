@@ -44,8 +44,8 @@ def build_dashboard_context(
     """
     source_mode, capabilities = determine_source_and_capabilities(question, dashboard_data, history)
 
-    if not dashboard_data or source_mode == "mcp":
-        return "No relevant dashboard data used (Source mode: MCP).", source_mode, capabilities
+    if not dashboard_data:
+        return "No dashboard data available.", source_mode, capabilities
 
     # Build filtered context by strictly extracting required fields
     # If source_mode is dashboard or hybrid, we provide everything currently

@@ -21,6 +21,7 @@ from app.agent.tool_registry import get_tool, is_tool_allowed
 from app.clients.mcp_client import mcp_request
 from app.services.mcp_service import parse_mcp_response
 from app.agent.semantic_router import Capability
+from app.agent.capability_contract import validate_contract
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +141,7 @@ def _normalize_obj(obj: Any, depth: int = 0) -> Any:
 
 
 def _apply_reduction(data: Any, reduction: dict | None) -> Any:
-    """Apply deterministic data reduction to a result list based on the gateway arguments."""
+    """Apply deterministic data reduction to a result list based on the QueryPlan."""
     if not isinstance(data, list):
         return data
 
@@ -156,49 +157,90 @@ def _apply_reduction(data: Any, reduction: dict | None) -> Any:
     if not op:
         return data
 
+    metric = reduction.get("metric")
+    limit = int(reduction.get("limit", reduction.get("n", 5)))
+    
+    # Safe metric normalizations
+    if metric == "stars": metric = "stargazers_count"
+    if metric == "forks": metric = "forks_count"
+
     # 1. Filter
-    filter_key = reduction.get("filter_key")
-    filter_val = reduction.get("filter_value")
-    if filter_key and filter_val:
-        data = [item for item in data if isinstance(item, dict) and str(item.get(filter_key, "")).lower() == str(filter_val).lower()]
+    filters = reduction.get("filters", {})
+    # also support legacy filter_key/filter_value
+    if "filter_key" in reduction and "filter_value" in reduction:
+        filters[reduction["filter_key"]] = reduction["filter_value"]
 
-    # 2. Sort / Top N
-    if op in ["top_n", "latest_n"]:
-        n = int(reduction.get("n", 5))
-        field = reduction.get("field", "stargazers_count" if op == "top_n" else "updated_at")
-        
-        # Sort data
-        try:
-            data.sort(key=lambda x: x.get(field, 0) if isinstance(x, dict) and x.get(field) is not None else 0, reverse=True)
-        except Exception:
-            pass # fallback to unsorted if field types are incomparable
+    if filters:
+        for k, v in filters.items():
+            data = [item for item in data if isinstance(item, dict) and str(item.get(k, "")).lower() == str(v).lower()]
+
+    # 2. Sort
+    sort_field = reduction.get("sort")
+    if sort_field:
+        desc = True
+        if sort_field.lower().endswith(" asc"):
+            desc = False
+            sort_field = sort_field[:-4]
+        elif sort_field.lower().endswith(" desc"):
+            sort_field = sort_field[:-5]
             
-        return {"items": data[:n]}
+        try:
+            data.sort(key=lambda x: x.get(sort_field, 0) if isinstance(x, dict) and x.get(sort_field) is not None else 0, reverse=desc)
+        except Exception:
+            pass
 
-    # 3. Count
+    # Generic Operations
     if op == "count":
-        return {
-            "local_count": len(data),
-            "note": "This is the count of the provided subset. It may not reflect global counts if pagination occurred."
-        }
-
-    # 4. Select Fields
-    if op == "select_fields":
-        n = int(reduction.get("n", 5))
-        field_str = reduction.get("field", "")
-        fields = [f.strip() for f in field_str.split(",") if f.strip()]
+        return {"local_count": len(data), "note": "Local count of provided subset."}
         
+    if op == "sum" and metric:
+        total = sum(item.get(metric, 0) for item in data if isinstance(item, dict) and isinstance(item.get(metric), (int, float)))
+        return {f"total_{metric}": total}
+        
+    if op == "max" and metric:
+        if not data: return {"max": None}
+        best = max(data, key=lambda x: x.get(metric, 0) if isinstance(x, dict) and isinstance(x.get(metric), (int, float)) else -float('inf'))
+        return {"max_item": best}
+        
+    if op == "min" and metric:
+        if not data: return {"min": None}
+        worst = min(data, key=lambda x: x.get(metric, 0) if isinstance(x, dict) and isinstance(x.get(metric), (int, float)) else float('inf'))
+        return {"min_item": worst}
+
+    if op in ["top_n", "latest_n"]:
+        field = metric if op == "top_n" else "updated_at"
+        if not sort_field: # If not already sorted
+            try:
+                data.sort(key=lambda x: x.get(field, 0) if isinstance(x, dict) and x.get(field) is not None else 0, reverse=True)
+            except Exception:
+                pass
+        return {"items": data[:limit]}
+
+    if op == "select_fields":
+        field_str = metric or reduction.get("field", "")
+        fields = [f.strip() for f in field_str.split(",") if f.strip()]
         if fields:
             reduced = []
-            for item in data[:n]:
+            for item in data[:limit]:
                 if isinstance(item, dict):
                     reduced.append({k: v for k, v in item.items() if k in fields})
                 else:
                     reduced.append(item)
             return {"items": reduced}
-        return {"items": data[:n]}
+        return {"items": data[:limit]}
+        
+    if op == "aggregate" and metric == "language":
+        # Group by language
+        lang_totals = {}
+        for item in data:
+            if isinstance(item, dict):
+                lang = item.get("language")
+                if lang:
+                    lang_totals[lang] = lang_totals.get(lang, 0) + 1
+        sorted_langs = [{"language": k, "count": v} for k, v in sorted(lang_totals.items(), key=lambda item: item[1], reverse=True)]
+        return {"aggregated_languages": sorted_langs}
 
-    return data
+    return {"items": data[:limit]}
 
 
 def _extract_content(parsed: dict, reduction: dict | None) -> Any:
@@ -244,62 +286,6 @@ async def _execute_mcp_direct(tool_name: str, arguments: dict[str, Any], reducti
         logger.error("Raw MCP execution error (%s): %s", tool_name, str(e))
         raise
 
-async def _analyze_languages_pipeline(arguments: dict[str, Any]) -> dict[str, Any]:
-    """Deterministically aggregate languages across all repos for a user."""
-    owner = arguments.get("owner")
-    if not owner:
-        raise ValueError("Missing 'owner' argument for language analysis.")
-        
-    # Fetch repos
-    repos_data = await _execute_mcp_direct("list_repositories", {"owner": owner, "sort": "pushed"})
-    
-    if isinstance(repos_data, dict) and "items" in repos_data:
-        repos = repos_data["items"]
-    elif isinstance(repos_data, list):
-        repos = repos_data
-    else:
-        repos = []
-
-    lang_totals = {}
-    for repo in repos[:15]: # Limit to top 15 most active to respect rate limits
-        if not repo.get("name"):
-            continue
-        try:
-            lang_data = await _execute_mcp_direct("get_repository", {"owner": owner, "repo": repo["name"]})
-            # In real GitHub API, get_repository might just return the primary language. 
-            # We'll use the primary language and stars/forks as proxy weights if byte count isn't returned
-            primary = lang_data.get("language")
-            if primary:
-                lang_totals[primary] = lang_totals.get(primary, 0) + 1
-        except Exception:
-            continue
-            
-    sorted_langs = [{"language": k, "repo_count": v} for k, v in sorted(lang_totals.items(), key=lambda item: item[1], reverse=True)]
-    
-    return {
-        "analysis_type": "language_aggregation",
-        "top_languages": sorted_langs,
-        "note": "Aggregated from recent active repositories."
-    }
-
-async def _get_latest_pr_pipeline(arguments: dict[str, Any]) -> dict[str, Any]:
-    """Deterministically find the latest PR for an author."""
-    author = arguments.get("author")
-    if not author:
-         raise ValueError("Missing 'author' argument.")
-         
-    query = f"is:pr author:{author} sort:created-desc"
-    try:
-        data = await _execute_mcp_direct("search_issues", {"query": query}) # search_issues handles PRs natively
-        
-        # Apply strict reduction
-        reduction = {"operation": "latest_n", "n": 1, "field": "created_at"}
-        return _apply_reduction(data, reduction)
-    except Exception as e:
-        raise
-
-
-
 async def execute_tool(tool_name: str, arguments: dict[str, Any], reduction: dict | None = None) -> dict[str, Any]:
     """
     Execute an MCP tool by name with the given arguments.
@@ -319,20 +305,24 @@ async def execute_tool(tool_name: str, arguments: dict[str, Any], reduction: dic
             "error": str | None,
         }
     """
-    # 0. Intercept pseudo-capability pipelines
-    if tool_name == "analyze_languages":
+    # 0. Contract Enforcement
+    if reduction:
+        cap = reduction.get("capability")
+        op = reduction.get("operation")
+        metric = reduction.get("metric")
+        scope = reduction.get("scope")
         try:
-             res = await _analyze_languages_pipeline(arguments)
-             return {"success": True, "tool_name": tool_name, "result": res, "error": None}
-        except Exception as e:
-             return {"success": False, "tool_name": tool_name, "result": None, "error": str(e)}
-             
-    if tool_name == "get_latest_pr":
-        try:
-             res = await _get_latest_pr_pipeline(arguments)
-             return {"success": True, "tool_name": tool_name, "result": res, "error": None}
-        except Exception as e:
-             return {"success": False, "tool_name": tool_name, "result": None, "error": str(e)}
+            validate_contract(cap, op, metric, scope)
+            # Safe deterministic normalization
+            if metric == "stars": reduction["metric"] = "stargazers_count"
+            if metric == "forks": reduction["metric"] = "forks_count"
+        except ValueError as e:
+            return {
+                "success": False,
+                "tool_name": tool_name,
+                "result": None,
+                "error": str(e)
+            }
 
     # 1. Check allow-list for raw tools
     if not is_tool_allowed(tool_name):

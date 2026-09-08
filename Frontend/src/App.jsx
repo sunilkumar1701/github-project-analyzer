@@ -22,6 +22,8 @@ import ActivityStatus from "./components/ActivityStatus/ActivityStatus";
 import ActionButtons from "./components/ActionButtons/ActionButtons";
 import NavigationModal from "./components/NavigationModal/NavigationModal";
 import Auth from "./components/Auth/Auth";
+import FloatingAIButton from "./components/FloatingAIButton/FloatingAIButton";
+import ProfilePage from "./components/ProfilePage/ProfilePage";
 
 import { useDashboardContext } from "./context/DashboardContext";
 import { COLORS } from './constants/colorConstant';
@@ -41,6 +43,7 @@ function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [currentView, setCurrentView] = useState("dashboard");
 
   const handleModuleLoaded = useCallback(() => {
     setLoadedModules((prev) =>
@@ -175,6 +178,8 @@ function App() {
 
   return (
     <>
+      {isAuthenticated && <FloatingAIButton username={activeDashboardUser} />}
+
       {showModal && (
         <NavigationModal 
           context={detectedContext} 
@@ -182,7 +187,7 @@ function App() {
         />
       )}
 
-      {activeDashboardUser && (
+      {activeDashboardUser && currentView === "dashboard" && (
         <div 
           className="dashboard" 
           ref={dashboardRef} 
@@ -282,9 +287,17 @@ function App() {
               onReanalyze={handleReanalyze}
               username={activeDashboardUser}
               dashboardData={dashboardData}
+              onProfileClick={() => setCurrentView("profile")}
             />
           </div>
         </div>
+      )}
+
+      {activeDashboardUser && currentView === "profile" && (
+        <ProfilePage 
+          onBack={() => setCurrentView("dashboard")} 
+          onLogout={() => setCurrentView("dashboard")} 
+        />
       )}
     </>
   );

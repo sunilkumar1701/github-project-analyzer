@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
+    SUPABASE_SECRET_KEY: str = ""
 
     # CORS
     CORS_ORIGINS: str = "*"

@@ -181,6 +181,7 @@ async def run_agent(
     )
 
     tool_results: list[dict] = []
+    executed_tool_signatures: set[str] = set()
     step = 0
 
     try:
@@ -316,21 +317,33 @@ async def run_agent(
                 tool_def = get_tool(tool_name)
                 ui_label = tool_def["ui_label"] if tool_def else f"Consulting GitHub ({tool_name})"
 
-                yield _sse({
-                    "type": "tool_started",
-                    "tool": tool_name,
-                    "label": ui_label,
-                })
+                # 1. Duplicate/Loop Prevention
+                signature = f"{tool_name}:{json.dumps(args, sort_keys=True)}:{json.dumps(reduction, sort_keys=True)}"
+                if signature in executed_tool_signatures:
+                    logger.warning("Duplicate tool call prevented: %s", signature)
+                    result = {
+                        "success": False,
+                        "tool_name": tool_name,
+                        "result": None,
+                        "error": "DUPLICATE_CALL: You already executed this exact tool call in this request. Please review your previous tool results instead of repeating the call. If you need different data, change the arguments or reduction plan.",
+                    }
+                else:
+                    executed_tool_signatures.add(signature)
+                    yield _sse({
+                        "type": "tool_started",
+                        "tool": tool_name,
+                        "label": ui_label,
+                    })
 
-                # Execute via FastAPI tool executor (never direct from LLM)
-                result = await execute_tool(tool_name, args, reduction)
-                tool_results.append(result)
+                    # Execute via FastAPI tool executor (never direct from LLM)
+                    result = await execute_tool(tool_name, args, reduction)
+                    tool_results.append(result)
 
-                yield _sse({
-                    "type": "tool_completed",
-                    "tool": tool_name,
-                    "success": result["success"],
-                })
+                    yield _sse({
+                        "type": "tool_completed",
+                        "tool": tool_name,
+                        "success": result["success"],
+                    })
 
                 # Append tool result to messages
                 tool_result_content = (
@@ -345,7 +358,12 @@ async def run_agent(
                     "content": tool_result_content,
                 })
 
-            # Continue the loop with updated messages
+            # 2. Tool-Wandering Prevention
+            if len(executed_tool_signatures) >= 4:
+                messages.append({
+                    "role": "system",
+                    "content": "WANDERING_PREVENTION: You have made several tool calls. Please synthesize the accumulated data to answer the user now. Do not call additional tools unless absolutely required to fulfill a specific unresolved element of your QueryPlan."
+                })
 
         # If we reach here, we hit MAX_AGENT_STEPS
         logger.warning("Agent reached MAX_AGENT_STEPS (%d)", MAX_AGENT_STEPS)

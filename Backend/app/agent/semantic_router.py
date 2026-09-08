@@ -36,6 +36,8 @@ _EXPLICIT_MCP_OVERRIDE = [
     r"\b(get this from github)\b",
 ]
 
+_AGGREGATION_KEYWORDS = [r"\b(total|all|most|latest|top|highest|lowest|combined|sum|average|every)\b"]
+
 def determine_source_and_capabilities(
     question: str, 
     dashboard_data: dict[str, Any] | None, 
@@ -60,47 +62,42 @@ def determine_source_and_capabilities(
     # Check history if it's a short follow-up (e.g. "yes in the readme")
     if history and len(question.split()) < 10:
         prev_q = history[-2].content.lower() if len(history) >= 2 else ""
-        if required_caps == {Capability.README_CODE}: # If only readme is triggered, inherit previous caps
+        if required_caps == {Capability.README_CODE}:
              for cap, patterns in _INTENT_MAP.items():
                 if any(re.search(pattern, prev_q) for pattern in patterns):
                     required_caps.add(cap)
 
     # 3. Determine if dashboard can satisfy these capabilities
+    # STRICT SUFFICIENCY: Dashboard is only sufficient if it explicitly guarantees the complete data for the query.
     dashboard_can_satisfy = False
     mcp_required = False
     
-    # Define what dashboard contains
     dash_keys = dashboard_data.keys() if dashboard_data else []
-    has_score = "developerScore" in dash_keys or "score" in question_lower
-    has_languages = "technologyStack" in dash_keys or "languages" in dash_keys
-    has_repos = "repositoryAnalysis" in dash_keys
+    is_aggregation = any(re.search(pattern, question_lower) for pattern in _AGGREGATION_KEYWORDS)
     
-    # Default to dashboard if asking about score
-    if "score" in question_lower or "rank" in question_lower:
+    # Dashboard is authoritative for proprietary scores
+    if "score" in question_lower or "rank" in question_lower or "readiness" in question_lower:
         dashboard_can_satisfy = True
 
-    for cap in required_caps:
-        if cap == Capability.PROFILE and "profileAnalysis" in dash_keys:
-            dashboard_can_satisfy = True
-        elif cap == Capability.LANGUAGES and has_languages:
-            dashboard_can_satisfy = True
-        elif cap == Capability.LANGUAGES and not has_languages:
-            mcp_required = True
-        elif cap == Capability.REPOSITORIES:
-            # If asking for most stars/latest, and dashboard has it, great. But usually we need MCP.
-            # Let's say if asking for "most starred" and it's in dashboard, dashboard can satisfy.
-            if "most starred" in question_lower and "mostStarredRepository" in dash_keys:
-                dashboard_can_satisfy = True
-            else:
-                mcp_required = True
-        elif cap in [Capability.PULL_REQUESTS, Capability.ISSUES, Capability.README_CODE, Capability.ACTIVITY]:
-            mcp_required = True
+    # If the user asks a very specific profile question (e.g. location), dashboard might have it.
+    if Capability.PROFILE in required_caps and "profileAnalysis" in dash_keys and not is_aggregation:
+        dashboard_can_satisfy = True
+
+    # For everything else (repos, PRs, issues, languages, activity, aggregations), we MUST rely on MCP 
+    # because the dashboard subset does not guarantee completeness.
+    if any(c in required_caps for c in [
+        Capability.REPOSITORIES, Capability.LANGUAGES, Capability.README_CODE, 
+        Capability.PULL_REQUESTS, Capability.ISSUES, Capability.ACTIVITY
+    ]):
+        mcp_required = True
+        
+    if is_aggregation:
+        mcp_required = True
             
     # Resolve Source Mode
     if explicit_mcp:
         source_mode = "mcp"
         if not required_caps:
-             # Default to general capabilities if none detected but MCP forced
              required_caps = {Capability.REPOSITORIES, Capability.PROFILE}
     elif mcp_required and dashboard_can_satisfy:
         source_mode = "hybrid"
@@ -109,8 +106,10 @@ def determine_source_and_capabilities(
     elif dashboard_can_satisfy:
         source_mode = "dashboard"
     else:
-        # Fallback
-        source_mode = "dashboard"
+        # Fallback to MCP if we have no idea, to avoid silent hallucination
+        source_mode = "mcp"
+        if not required_caps:
+            required_caps = {Capability.PROFILE, Capability.REPOSITORIES}
         
     if source_mode == "dashboard":
         required_caps.clear()

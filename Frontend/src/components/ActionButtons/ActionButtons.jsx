@@ -1,14 +1,12 @@
 import "./ActionButtons.css";
 
-import { RefreshCw, Download, LogOut } from "lucide-react";
-import chatbotIcon from "../../assets/Chatbot.png";
+import { RefreshCw, Download, User } from "lucide-react";
 
 import { useState, useCallback, useRef, useEffect } from "react";
 
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-import ChatPanel from "../chat/ChatPanel";
 import { COLORS } from '../../constants/colorConstant';
 import { supabase } from '../../services/supabaseClient';
 
@@ -18,10 +16,9 @@ const ActionButtons = ({
   onReanalyze,
   username,
   dashboardData,
+  onProfileClick,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
-
-  const [showChatbot, setShowChatbot] = useState(false);
 
   const isMountedRef = useRef(true);
 
@@ -29,14 +26,6 @@ const ActionButtons = ({
     return () => {
       isMountedRef.current = false;
     };
-  }, []);
-
-  const handleChatbot = useCallback(() => {
-    setShowChatbot((prev) => !prev);
-  }, []);
-
-  const handleSignOut = useCallback(async () => {
-    await supabase.auth.signOut();
   }, []);
 
   const handleDownload = useCallback(async () => {
@@ -192,35 +181,17 @@ const ActionButtons = ({
           <Download size={20} className={isDownloading ? "spin-icon" : ""} />
         </button>
 
-        {/* Chatbot */}
+        {/* Profile */}
         <button
-          className="icon-btn chatbot-btn"
+          className="icon-btn profile-btn"
           disabled={isLoading}
-          onClick={handleChatbot}
-          title="GitHub AI Assistant"
+          onClick={onProfileClick}
+          title="Profile"
         >
-          <img src={chatbotIcon} alt="AI Assistant" className="chatbot-image" />
-
-          <span>AI</span>
-        </button>
-
-        {/* Sign Out */}
-        <button
-          className="icon-btn signout-btn"
-          onClick={handleSignOut}
-          title="Sign Out"
-          style={{ marginLeft: 'auto' }}
-        >
-          <LogOut size={20} />
+          <User size={20} />
+          <span style={{ marginLeft: '8px' }}>Profile</span>
         </button>
       </div>
-
-      {showChatbot && (
-        <ChatPanel
-          onClose={() => setShowChatbot(false)}
-          username={username}
-        />
-      )}
     </>
   );
 };

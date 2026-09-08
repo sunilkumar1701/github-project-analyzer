@@ -26,6 +26,7 @@ from app.agent.tool_registry import register_tools_from_mcp
 from app.api.routes.github import router as github_router
 from app.api.routes.developer_score import router as developer_score_router
 from app.api.routes.chat import router as chat_router
+from app.api.routes.user import router as user_router
 
 # Setup logging first
 setup_logging()
@@ -134,3 +135,4 @@ async def health_check():
 app.include_router(github_router, prefix="/api/github")
 app.include_router(developer_score_router, prefix="/api/github/developer-score")
 app.include_router(chat_router, prefix="/api/chat")
+app.include_router(user_router, prefix="/api/user")
