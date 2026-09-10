@@ -9,8 +9,15 @@ import { DashboardProvider } from "./context/DashboardContext";
 
 const path = window.location.pathname;
 
+const hash = window.location.hash;
+
 const renderApp = () => {
-  if (path.startsWith('/auth/verify')) {
+  if (
+    path.startsWith('/auth/verify') || 
+    hash.includes('message=Confirmation+link+accepted') || 
+    hash.includes('type=email_change') ||
+    hash.includes('error_code=otp_expired')
+  ) {
     return <AuthVerify />;
   }
   

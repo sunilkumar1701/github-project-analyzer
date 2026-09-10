@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Edit2, LogOut, Trash2, Check, X } from 'lucide-react';
+import { ArrowLeft, Edit2, LogOut, Trash2, Check, X, RefreshCw } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
 import apiClient from '../../services/apiClient';
 import './ProfilePage.css';
@@ -9,18 +9,89 @@ const ProfilePage = ({ onBack, onLogout }) => {
   const [email, setEmail] = useState('');
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
+  const [isHoveringToast, setIsHoveringToast] = useState(false);
+  const [isPendingEmailVerification, setIsPendingEmailVerification] = useState(false);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     fetchUser();
+
+    // Listen for auth changes (e.g. when email is verified in another tab)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
+        if (session?.user) {
+          setUser(session.user);
+          setEmail(session.user.email);
+          setNewEmail(session.user.email);
+          setIsPendingEmailVerification(false);
+        } else {
+          fetchUser();
+        }
+      }
+    });
+
+    // Refresh when window regains focus
+    const handleFocus = () => {
+      fetchUser();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
+
+  // Toast auto-hide logic for success
+  useEffect(() => {
+    let timer;
+    if (successMsg && !isHoveringToast) {
+      timer = setTimeout(() => {
+        setSuccessMsg(null);
+      }, 1500);
+    }
+    return () => clearTimeout(timer);
+  }, [successMsg, isHoveringToast]);
+
+  // Toast auto-hide logic for error
+  useEffect(() => {
+    let timer;
+    if (error && !isHoveringToast) {
+      timer = setTimeout(() => {
+        setError(null);
+      }, 3000); // Errors stay a bit longer (3s)
+    }
+    return () => clearTimeout(timer);
+  }, [error, isHoveringToast]);
+
+  // Poll for email update when pending
+  useEffect(() => {
+    let interval;
+    if (isPendingEmailVerification) {
+      interval = setInterval(async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && user.email !== email) {
+          setUser(user);
+          setEmail(user.email);
+          setNewEmail(user.email);
+          setIsPendingEmailVerification(false);
+          setSuccessMsg('Email updated successfully!');
+        }
+      }, 3000); // Check every 3 seconds
+    }
+    return () => clearInterval(interval);
+  }, [isPendingEmailVerification, email]);
 
   const fetchUser = async () => {
     setIsLoading(true);
@@ -31,6 +102,9 @@ const ProfilePage = ({ onBack, onLogout }) => {
       setUser(user);
       setEmail(user.email);
       setNewEmail(user.email);
+      const fetchedName = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.display_name || '';
+      setDisplayName(fetchedName);
+      setNewName(fetchedName);
     }
     setIsLoading(false);
   };
@@ -39,7 +113,55 @@ const ProfilePage = ({ onBack, onLogout }) => {
     if (user?.user_metadata?.avatar_url) {
       return user.user_metadata.avatar_url;
     }
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.email || 'User')}&background=random`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || user?.email || 'User')}&background=random`;
+  };
+
+  const handleEditName = () => {
+    setIsEditingName(true);
+    setError(null);
+    setSuccessMsg(null);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setNewName(displayName);
+    setError(null);
+  };
+
+  const handleSaveName = async () => {
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      setError('Display name cannot be empty.');
+      return;
+    }
+    if (trimmedName === displayName) {
+      setError('Display name is unchanged.');
+      return;
+    }
+
+    setIsSavingName(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    const { data, error } = await supabase.auth.updateUser({ data: { full_name: trimmedName } });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setDisplayName(trimmedName);
+      setSuccessMsg('Display name updated successfully.');
+      setIsEditingName(false);
+      
+      // Update the user state to reflect the new metadata for avatar
+      setUser(prev => ({
+        ...prev,
+        user_metadata: {
+          ...prev.user_metadata,
+          full_name: trimmedName
+        }
+      }));
+    }
+    setIsSavingName(false);
   };
 
   const handleEditEmail = () => {
@@ -73,13 +195,17 @@ const ProfilePage = ({ onBack, onLogout }) => {
     setError(null);
     setSuccessMsg(null);
 
-    const { data, error } = await supabase.auth.updateUser({ email: trimmedEmail });
+    const { data, error } = await supabase.auth.updateUser(
+      { email: trimmedEmail },
+      { emailRedirectTo: `${window.location.origin}/auth/verify` }
+    );
 
     if (error) {
       setError(error.message);
     } else {
       setSuccessMsg('Email change requested. Please check your email to confirm the new address.');
       setIsEditingEmail(false);
+      setIsPendingEmailVerification(true);
     }
     setIsSaving(false);
   };
@@ -131,9 +257,48 @@ const ProfilePage = ({ onBack, onLogout }) => {
         </div>
 
         <div className="profile-section">
+          <label className="profile-label">Display Name</label>
+          {isEditingName ? (
+            <div className="profile-edit-group">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="profile-input"
+                disabled={isSavingName}
+                placeholder="Enter your name"
+              />
+              <div className="profile-edit-actions">
+                <button 
+                  className="profile-action-btn cancel-btn" 
+                  onClick={handleCancelEditName}
+                  disabled={isSavingName}
+                >
+                  <X size={16} /> Cancel
+                </button>
+                <button 
+                  className="profile-action-btn save-btn" 
+                  onClick={handleSaveName}
+                  disabled={isSavingName}
+                >
+                  {isSavingName ? 'Saving...' : <><Check size={16} /> Save</>}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="profile-display-group">
+              <span className="profile-value">{displayName || 'No name set'}</span>
+              <button className="profile-edit-btn" onClick={handleEditName}>
+                <Edit2 size={14} /> Edit
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="profile-section">
           <label className="profile-label">Email</label>
           {isEditingEmail ? (
-            <div className="profile-edit-email-group">
+            <div className="profile-edit-group">
               <input
                 type="email"
                 value={newEmail}
@@ -159,17 +324,14 @@ const ProfilePage = ({ onBack, onLogout }) => {
               </div>
             </div>
           ) : (
-            <div className="profile-display-email-group">
-              <span className="profile-email">{email}</span>
+            <div className="profile-display-group">
+              <span className="profile-value">{email}</span>
               <button className="profile-edit-btn" onClick={handleEditEmail}>
                 <Edit2 size={14} /> Edit
               </button>
             </div>
           )}
         </div>
-
-        {error && <div className="profile-error">{error}</div>}
-        {successMsg && <div className="profile-success">{successMsg}</div>}
 
         <div className="profile-divider"></div>
 
@@ -211,6 +373,30 @@ const ProfilePage = ({ onBack, onLogout }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Success Toast Notification */}
+      {successMsg && (
+        <div 
+          className="profile-toast-success"
+          onMouseEnter={() => setIsHoveringToast(true)}
+          onMouseLeave={() => setIsHoveringToast(false)}
+        >
+          <Check size={16} />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      {/* Error Toast Notification */}
+      {error && (
+        <div 
+          className="profile-toast-error"
+          onMouseEnter={() => setIsHoveringToast(true)}
+          onMouseLeave={() => setIsHoveringToast(false)}
+        >
+          <X size={16} />
+          <span>{error}</span>
         </div>
       )}
     </div>

@@ -4,7 +4,7 @@ import { supabase } from '../../services/supabaseClient';
 import './Auth.css';
 
 const AuthVerify = () => {
-  const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
+  const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error', 'pending'
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -14,10 +14,17 @@ const AuthVerify = () => {
       const queryParams = new URLSearchParams(window.location.search);
 
       const error = hashParams.get('error_description') || queryParams.get('error_description') || hashParams.get('error') || queryParams.get('error');
+      const message = hashParams.get('message') || queryParams.get('message');
 
       if (error) {
         setStatus('error');
         setErrorMessage(decodeURIComponent(error).replace(/\+/g, ' '));
+        return;
+      }
+
+      if (message) {
+        setStatus('pending');
+        setErrorMessage(decodeURIComponent(message).replace(/\+/g, ' '));
         return;
       }
 
@@ -66,6 +73,21 @@ const AuthVerify = () => {
           </div>
         )}
 
+        {status === 'pending' && (
+          <div>
+            <CheckCircle size={64} color="var(--primary-main)" style={{ margin: '0 auto 20px auto' }} />
+            <h1 className="auth-title">Almost There!</h1>
+            <p className="auth-subtitle" style={{ marginTop: '10px', marginBottom: '20px', color: 'var(--text-primary)' }}>
+              {errorMessage}
+            </p>
+            <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.3)', marginBottom: '20px' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
+                <strong>Note:</strong> Because "Secure email change" is enabled in your Supabase settings, you must click the links sent to <strong>both</strong> your old and new email addresses.
+              </p>
+            </div>
+          </div>
+        )}
+
         {status === 'error' && (
           <div>
             <XCircle size={64} color="var(--danger)" style={{ margin: '0 auto 20px auto' }} />
@@ -73,6 +95,11 @@ const AuthVerify = () => {
             <p className="auth-subtitle" style={{ marginTop: '10px', color: 'var(--danger)' }}>
               {errorMessage}
             </p>
+            {errorMessage.includes('expired') && (
+              <p style={{ marginTop: '20px', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
+                If you just requested this change, make sure you click the link in the <strong>newest</strong> email. Alternatively, you can disable "Secure email change" in your Supabase Authentication settings to make this a 1-click process.
+              </p>
+            )}
           </div>
         )}
       </div>
